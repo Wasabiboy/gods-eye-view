@@ -117,11 +117,11 @@ test('the subtle default did not weaken the feather control, and 0 is still reac
   // The cheap way to move a default would be to nerf the control. Prove the
   // slider still spans its full range and the geometry is still DERIVED from
   // the ratio — a check that would pass vacuously if it only ever saw one value.
-  assert.match(indexHtml, /id="scope-feather-slider"[^>]*\smin="0"[^>]*\smax="100"/,
+  assert.match(indexHtml, /id="scope-feather-slider"[^>]*\smin="0"[^>]*\smax="200"/,
     'the slider still offers the whole range');
   const previous = getScopeMaskFeather();
   try {
-    for (const ratio of [0.35, 0.7, 1]) {
+    for (const ratio of [0.35, 0.7, 1, 1.75, 2]) {
       setScopeMaskFeather(ratio);
       const geo = scopeMaskGeometry(1200, 900);
       const keyholeR = 900 * 0.5 * KEYHOLE_OUTER_RADIUS;

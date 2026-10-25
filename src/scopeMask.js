@@ -1,4 +1,10 @@
 import { getKeyholeGeometry } from './celestialRing.js';
+import { SCOPE_FEATHER_RATIO_MAX } from './scopeMaskPolicy.js';
+export {
+  SCOPE_FEATHER_RATIO_MAX,
+  SCOPE_FEATHER_MAX_PCT,
+  clampScopeFeatherPct,
+} from './scopeMaskPolicy.js';
 
 /**
  * Scope mask — the app's signature circular viewport treatment, made real.
@@ -46,8 +52,8 @@ const SCOPE_OUTSIDE_COLOR = { r: 5, g: 5, b: 8 };
  * 0.11 since 2026-08-24 (owner final lock; 0.08 on 08-23, hard-crop 0 on
  * 08-22 — this supersedes both), REVISING the 2026-08-22 ruling that
  * set it to zero: a subtle soft edge rather than either the hard crop or the
- * retired 35 % halo. The slider is untouched and still spans 0..100; this is
- * only where it STARTS. `setScopeMaskFeather` is unchanged, so any feather a
+ * retired 35 % halo. The slider spans 0..200; this is
+ * only where it STARTS. Any feather a
  * share link carries, or the operator dials in, overrides this immediately, and
  * the hard-crop path at 0 is still reachable from the handle.
  *
@@ -344,7 +350,10 @@ function teardownDevicePixelRatioWatch() {
 export function scopeMaskGeometry(width, height, featherRatio = _featherRatio) {
   const keyhole = getKeyholeGeometry(width, height);
   if (!(keyhole.radius > 0)) return null;
-  const feather = Math.max(0, Math.min(1, Number(featherRatio) || 0));
+  const feather = Math.max(
+    0,
+    Math.min(SCOPE_FEATHER_RATIO_MAX, Number(featherRatio) || 0),
+  );
   // Feather straddles the keyhole edge so the visible radius stays anchored
   // to the shared geometry every keyhole consumer (labels, cards) fades on.
   const half = keyhole.radius * feather * 0.5;
@@ -522,11 +531,14 @@ export function isScopeMaskEnabled() {
 }
 
 /**
- * @param {number} ratio - Edge feather as a fraction of keyhole radius [0,1].
+ * @param {number} ratio - Edge feather as a fraction of keyhole radius [0,2].
  * @returns {void}
  */
 export function setScopeMaskFeather(ratio) {
-  _featherRatio = Math.max(0, Math.min(1, Number(ratio) || 0));
+  _featherRatio = Math.max(
+    0,
+    Math.min(SCOPE_FEATHER_RATIO_MAX, Number(ratio) || 0),
+  );
   draw();
 }
 

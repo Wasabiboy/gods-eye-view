@@ -186,6 +186,31 @@ Regression coverage lives in `src/tools/area.test.mjs`,
 `src/tools/queries/environment.test.mjs` and
 `src/layers/perimeters/cards.test.mjs`.
 
+## Scope controls and HUD text readability
+
+Display uses a native, visibly checked Scope checkbox. Turning it off disables
+its feather slider while retaining the value. Scope enabled state and feather
+are independent of Tactical, Operator, Minimal and Cyber layout changes. Share
+links (`sc`/`scf`) and scene visual state restore both choices, including feather
+above 100%. The supported feather range is 0–200% of the keyhole radius: 0% is a
+hard edge and 200% extends the gradient to the center while keeping its midpoint
+on the same keyhole edge. First run remains 11%; links predating `scf` retain
+their historical 35% parse fallback.
+
+Tactical, Operator and Minimal give every telemetry readout a small, softly
+edged black backing, including vertical metadata and multiline AIS. Glyphs keep
+the active style hue with stronger alpha, while the red REC dot retains its own
+color. Readout backing sits outside each glyph's opacity; Operator's corner and
+bar frames stay transparent rather than stacking another dark panel. Summary
+ellipsis and desktop single-line coordinates remain intact. The title, tagline,
+optional FPS and active-style readout use the same small backing. Minimal's
+lower coordinates clear map attribution. Cyber retains its existing skin.
+
+`node scripts/qa-scope-hud.mjs` exercises native checkbox click and Space,
+feather range and keyboard boundaries, all four layout transitions, share/scene
+restore, text-backing coverage and geometry, multiline AIS, summary clipping and
+narrow viewport containment. Optional `QA_SCREENSHOT_DIR` saves mode screenshots.
+
 ## Cyber HUD — September 30, 2026
 
 Display > HUD > Layout includes Cyber, also available through the HUD voice
@@ -5570,8 +5595,8 @@ easier to meet (detection is now on more often), but does not create it.
 - **Scope feather: `11%`** — a soft scope-mask edge (moved `0% → 8% → 11%`; `0%` hard crop for one day,
   `35%` before that). `SCOPE_FEATHER_RATIO_DEFAULT` in `src/scopeMask.js`,
   mirrored by `#scope-feather-slider`'s markup value AND readout and
-  `_scopeFeatherPct` in `sharelink.js`. The slider is untouched and still spans
-  0–100, and an explicit `0` is still the hard-crop path — pinned, so moving the
+  `_scopeFeatherPct` in `sharelink.js`. The slider spans
+  0–200, and an explicit `0` is still the hard-crop path — pinned, so moving the
   default cannot quietly delete it. The `scf` PARSE fallback deliberately stays
   at `35`: a link predating `scf` was authored when 35 was what its author saw,
   and restoring the author's view is what a share link is for.

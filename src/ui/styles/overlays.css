@@ -371,3 +371,131 @@
 #intel-hud[data-variant='minimal'] .hud-summary-wrap {
   max-width: 280px;
 }
+
+/* Text-sized black backing keeps bright imagery from washing out telemetry.
+   The backing wraps each readout outside its existing opacity, so dim metadata
+   keep their hierarchy as contrast increases; the REC dot stays red. */
+.hud-readout {
+  display: contents;
+}
+
+#intel-hud:is(
+    [data-variant='minimal'],
+    [data-variant='operator'],
+    [data-variant='tactical']
+  )
+  .hud-readout,
+:root:not([data-ui-theme='cyber']) .scene-text-holdout {
+  background: rgba(0, 0, 0, 0.34);
+  box-shadow: 0 0 6px 3px rgba(0, 0, 0, 0.16);
+  border-radius: 2px;
+  padding: 1px 4px;
+  margin: -1px -4px;
+  width: fit-content;
+  max-width: 100%;
+  box-sizing: content-box;
+  white-space: nowrap;
+}
+
+#intel-hud:is(
+    [data-variant='minimal'],
+    [data-variant='operator'],
+    [data-variant='tactical']
+  )
+  .hud-readout {
+  display: block;
+  width: max-content;
+  min-width: 0;
+  box-sizing: content-box;
+  white-space: nowrap;
+}
+
+#intel-hud:is(
+    [data-variant='minimal'],
+    [data-variant='operator'],
+    [data-variant='tactical']
+  )
+  .hud-readout
+  :not(#hud-rec-dot) {
+  color: rgb(from var(--hud-color) r g b / 0.86);
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.8),
+    0 0 4px var(--hud-glow);
+}
+
+#intel-hud:is(
+    [data-variant='minimal'],
+    [data-variant='operator'],
+    [data-variant='tactical']
+  )
+  :is(.hud-top-right, .hud-bottom-right)
+  .hud-readout,
+:root:not([data-ui-theme='cyber']) #style-indicator .scene-text-holdout {
+  margin-left: auto;
+}
+
+/* Rotating the backing with its text also covers both vertical annotations. */
+#intel-hud:is([data-variant='operator'], [data-variant='tactical']) .hud-edge {
+  opacity: 1;
+}
+
+#intel-hud:is([data-variant='operator'], [data-variant='tactical'])
+  .hud-edge
+  .hud-readout
+  > * {
+  opacity: 0.72;
+}
+
+#intel-hud:is(
+    [data-variant='minimal'],
+    [data-variant='operator'],
+    [data-variant='tactical']
+  )
+  :is(
+    .hud-top-bar-left,
+    .hud-top-bar-right,
+    .hud-summary-label,
+    .hud-orbital,
+    .hud-ais-vessel:not(.active)
+  ) {
+  opacity: 0.78;
+}
+
+/* One backing per line; the operator's frames stay light and transparent. */
+#intel-hud[data-variant='operator'] .hud-corner,
+#intel-hud:is([data-variant='minimal'], [data-variant='operator'])
+  :is(.hud-top-bar, .hud-bottom-bar) {
+  background: transparent;
+}
+
+#intel-hud:is([data-variant='minimal'], [data-variant='operator'])
+  :is(.hud-top-bar, .hud-bottom-bar) {
+  width: fit-content;
+  max-width: calc(100vw - 120px);
+  gap: 24px;
+}
+
+#intel-hud:is([data-variant='minimal'], [data-variant='operator'])
+  :is(.hud-top-bar, .hud-bottom-bar)
+  .hud-readout {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+:root:not([data-ui-theme='cyber']) #title-bar .subtitle {
+  margin-top: 8px;
+}
+
+:root:not([data-ui-theme='cyber']) #style-indicator .indicator-value {
+  margin-top: 4px;
+}
+
+#intel-hud[data-variant='minimal']
+  .hud-readout:has(> :is(.hud-classification, .hud-system)) {
+  display: none;
+}
+
+:root:not([data-ui-theme='cyber']) #title-bar .frame-rate-readout {
+  margin-top: 6px;
+}

@@ -5,6 +5,7 @@ import {
   normalizeAllocationStrategy,
 } from './data/detectionPolicy.js';
 import { clampScopeTerminusPct } from './scopeMask.js';
+import { clampScopeFeatherPct } from './scopeMaskPolicy.js';
 import {
   decodeLayerStateParams,
   encodeLayerStateParams,
@@ -227,10 +228,7 @@ export class ShareLinkManager {
       // (`_scopeFeatherPct` in the constructor tracks the default: that one
       // mirrors live state for the link this session generates, so it must match
       // the mask, not the archive.)
-      scopeFeatherPct: Math.max(
-        0,
-        Math.min(100, Math.round(parseOr(params.get('scf'), 35))),
-      ),
+      scopeFeatherPct: clampScopeFeatherPct(parseOr(params.get('scf'), 35)),
       // Absent (or non-numeric) `sce` = adaptive (null), the default behavior;
       // a value pins the terminus opacity percent, clamped into the SUPPORTED
       // 94..100 band. `sce=0` used to survive as a sub-94 terminus — a hole in
@@ -494,10 +492,7 @@ export class ShareLinkManager {
     if (typeof extras.scopeEnabled === 'boolean')
       this._scopeEnabled = extras.scopeEnabled;
     if (typeof extras.scopeFeatherPct === 'number') {
-      this._scopeFeatherPct = Math.max(
-        0,
-        Math.min(100, Math.round(extras.scopeFeatherPct)),
-      );
+      this._scopeFeatherPct = clampScopeFeatherPct(extras.scopeFeatherPct);
     }
     if (extras.scopeTerminusPct === null) this._scopeTerminusPct = null;
     else if (typeof extras.scopeTerminusPct === 'number') {
