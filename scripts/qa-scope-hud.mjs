@@ -95,6 +95,53 @@ const readHudGlyphs = () =>
     return { baseline, glyphs };
   });
 
+const readUnexpectedBackings = () =>
+  page.evaluate(() =>
+    [
+      ...document.querySelectorAll(
+        '#intel-hud .hud-readout, .scene-text-holdout',
+      ),
+    ]
+      .map((el) => {
+        const style = getComputedStyle(el);
+        return {
+          selector: el.id ? `#${el.id}` : `.${el.className}`,
+          background: style.backgroundColor,
+          shadow: style.boxShadow,
+          transition: `${style.transitionProperty} ${style.transitionDuration}`,
+        };
+      })
+      .filter(
+        (style) =>
+          style.background !== 'rgba(0, 0, 0, 0)' || style.shadow !== 'none',
+      ),
+  );
+
+async function settleTextBackings(enabled) {
+  // The pre-existing active-style value transitions all properties for 300ms.
+  // Wait for its backing to finish changing before inspecting or capturing it.
+  await page
+    .waitForFunction(
+      (scopeEnabled) => {
+        const expected = scopeEnabled
+          ? 'rgba(0, 0, 0, 0)'
+          : 'rgba(0, 0, 0, 0.7)';
+        return [
+          ...document.querySelectorAll(
+            '#intel-hud .hud-readout, .scene-text-holdout',
+          ),
+        ].every(
+          (el) =>
+            getComputedStyle(el).backgroundColor === expected &&
+            getComputedStyle(el).boxShadow === 'none',
+        );
+      },
+      { timeout: 2_000 },
+      enabled,
+    )
+    .catch(() => null);
+}
+
 async function openApplication(url) {
   await page.goto(url.href, { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(
@@ -289,6 +336,12 @@ try {
         scope: { enabled: true, featherPct: 100 },
       }),
     );
+    const transitioning = await readUnexpectedBackings();
+    if (transitioning.length)
+      console.log(
+        `[INFO] ${layout}: waiting for existing style transitions ${JSON.stringify(transitioning)}`,
+      );
+    await settleTextBackings(true);
     const originalGlyphs = await readHudGlyphs();
     const original = await page.evaluate(() => {
       const hud = document.getElementById('intel-hud');
@@ -313,6 +366,7 @@ try {
               .backgroundImage !== 'none'),
       };
     });
+    original.unexpectedBackings = await readUnexpectedBackings();
     check(
       `${layout}: Scope ON retains the original presentation without new backplates`,
       original.markerAbsent &&
@@ -351,6 +405,7 @@ try {
         scope: { enabled: false },
       }),
     );
+    await settleTextBackings(false);
     const backedGlyphs = await readHudGlyphs();
     check(
       `${layout}: Scope OFF adds backing without changing glyph styles`,
