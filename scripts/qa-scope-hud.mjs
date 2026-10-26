@@ -3,7 +3,8 @@
  * Scope and HUD browser acceptance. Requires the development server.
  * Run: node scripts/qa-scope-hud.mjs
  * Optional: QA_BASE_URL, QA_SCREENSHOT_DIR (screenshots stay outside the repo).
- * Proves native checkbox click/Space, feather 0/11/100/200, layout independence,
+ * Proves a fresh boot defaults to Scope ON at 100%, native checkbox click/Space,
+ * feather 0/11/100/200, layout independence,
  * share/scene restore, and visible text backing including rotated metadata.
  */
 import fs from 'node:fs';
@@ -55,12 +56,7 @@ const readScope = () =>
     };
   });
 
-try {
-  await page.setViewport({ width: 1440, height: 900 });
-  const url = new URL(process.env.QA_BASE_URL || 'http://127.0.0.1:4173');
-  url.searchParams.set('welcome', '0');
-  url.hash =
-    'v=2&lat=30.2672&lon=-97.7431&alt=2500&heading=0&pitch=-45&roll=0&map=esri&sc=1&scf=11&l=';
+async function openApplication(url) {
   await page.goto(url.href, { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(
     () => window.__godsEyeView?.styleManager?._applicationShortcuts,
@@ -76,6 +72,36 @@ try {
     },
     { timeout: 60_000 },
   );
+}
+
+try {
+  await page.setViewport({ width: 1440, height: 900 });
+  const url = new URL(process.env.QA_BASE_URL || 'http://127.0.0.1:4173');
+  url.searchParams.set('welcome', '0');
+  // This browser has a fresh profile. Start without authored state so the
+  // first assertion exercises the defaults rather than a share-link restore.
+  url.hash = '';
+  await openApplication(url);
+  const fresh = await readScope();
+  check(
+    'bare-URL fresh boot opens Scope ON with 100% feather',
+    fresh.enabled &&
+      fresh.checked &&
+      !fresh.disabled &&
+      fresh.feather === 1 &&
+      fresh.value === 100 &&
+      fresh.readout === '100%' &&
+      fresh.cornerAlpha > 0,
+    fresh,
+  );
+
+  // Use a known city view for canvas and readability checks below.
+  url.hash =
+    'v=2&lat=30.2672&lon=-97.7431&alt=2500&heading=0&pitch=-45&roll=0&map=esri&sc=1&scf=100&l=';
+  // Changing only the hash does not rerun startup restoration. Leave the app
+  // document first so this fixture is applied by a new application boot.
+  await page.goto('about:blank');
+  await openApplication(url);
   await page.evaluate(() => {
     const manager = window.__godsEyeView.styleManager;
     manager.setPanelCollapsed('pp-toggles', false, {
@@ -87,12 +113,13 @@ try {
   });
   const initial = await readScope();
   check(
-    'default Scope checkbox and 11% feather agree with the mask',
+    'Austin fixture restores Scope ON and 100% feather',
     initial.enabled &&
       initial.checked &&
       !initial.disabled &&
-      initial.feather === 0.11 &&
-      initial.value === 11 &&
+      initial.feather === 1 &&
+      initial.value === 100 &&
+      initial.readout === '100%' &&
       initial.cornerAlpha > 0,
     initial,
   );
@@ -112,7 +139,7 @@ try {
     !off.enabled &&
       !off.checked &&
       off.disabled &&
-      off.feather === 0.11 &&
+      off.feather === 1 &&
       off.cornerAlpha === 0,
     off,
   );
@@ -124,7 +151,7 @@ try {
     on.enabled &&
       on.checked &&
       !on.disabled &&
-      on.feather === 0.11 &&
+      on.feather === 1 &&
       on.cornerAlpha > 0,
     on,
   );
@@ -243,7 +270,8 @@ try {
         const color = backing && getComputedStyle(backing).backgroundColor;
         if (
           !backing ||
-          !color?.includes('0.34') ||
+          color !== 'rgba(0, 0, 0, 0.7)' ||
+          getComputedStyle(backing).boxShadow !== 'none' ||
           backing.parentElement.closest('.hud-readout')
         )
           missing.push(node.textContent.trim());
@@ -252,6 +280,30 @@ try {
         (el) => el.offsetWidth > 0 && el.offsetHeight > 0,
       );
       const empty = wrapped.filter((el) => !el.innerText.trim()).length;
+      const overlaps = [];
+      for (const parent of new Set(wrapped.map((el) => el.parentElement))) {
+        const siblings = wrapped.filter((el) => el.parentElement === parent);
+        for (let i = 1; i < siblings.length; i += 1) {
+          const previous = siblings[i - 1].getBoundingClientRect();
+          const current = siblings[i].getBoundingClientRect();
+          const horizontal =
+            Math.min(previous.right, current.right) -
+            Math.max(previous.left, current.left);
+          const vertical =
+            Math.min(previous.bottom, current.bottom) -
+            Math.max(previous.top, current.top);
+          // Horizontal bars share a vertical band. Only intersecting text boxes
+          // can stack their backing alpha; allow subpixel layout rounding.
+          if (horizontal > 0.5 && vertical > 0.5) {
+            overlaps.push({
+              parent: parent.className,
+              previous: siblings[i - 1].innerText,
+              current: siblings[i].innerText,
+              vertical,
+            });
+          }
+        }
+      }
       const lineIds = [
         'hud-mgrs',
         'hud-latlon',
@@ -291,6 +343,7 @@ try {
         visible,
         missing,
         empty,
+        overlaps,
         multiline,
         edges,
         broadBackings: broadBackings.length,
@@ -302,6 +355,11 @@ try {
         coverage.missing.length === 0 &&
         coverage.empty === 0 &&
         coverage.broadBackings === 0,
+      coverage,
+    );
+    check(
+      `${layout}: adjacent readout backings do not overlap`,
+      coverage.overlaps.length === 0,
       coverage,
     );
     check(

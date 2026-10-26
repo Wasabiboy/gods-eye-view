@@ -194,11 +194,12 @@ are independent of Tactical, Operator, Minimal and Cyber layout changes. Share
 links (`sc`/`scf`) and scene visual state restore both choices, including feather
 above 100%. The supported feather range is 0–200% of the keyhole radius: 0% is a
 hard edge and 200% extends the gradient to the center while keeping its midpoint
-on the same keyhole edge. First run remains 11%; links predating `scf` retain
-their historical 35% parse fallback.
+on the same keyhole edge. First run opens with Scope ON and feather 100%; links
+predating `scf` retain their historical 35% parse fallback.
 
-Tactical, Operator and Minimal give every telemetry readout a small, softly
-edged black backing, including vertical metadata and multiline AIS. Glyphs keep
+Tactical, Operator and Minimal give every telemetry readout a small 70%-black
+backing with rounded corners, including vertical metadata and multiline AIS.
+These darker backings have no shadow halo or overlap between adjacent lines. Glyphs keep
 the active style hue with stronger alpha, while the red REC dot retains its own
 color. Readout backing sits outside each glyph's opacity; Operator's corner and
 bar frames stay transparent rather than stacking another dark panel. Summary
@@ -208,7 +209,7 @@ lower coordinates clear map attribution. Cyber retains its existing skin.
 
 `node scripts/qa-scope-hud.mjs` exercises native checkbox click and Space,
 feather range and keyboard boundaries, all four layout transitions, share/scene
-restore, text-backing coverage and geometry, multiline AIS, summary clipping and
+restore, text-backing coverage and non-overlapping geometry, multiline AIS, summary clipping and
 narrow viewport containment. Optional `QA_SCREENSHOT_DIR` saves mode screenshots.
 
 ## Cyber HUD — September 30, 2026
@@ -5519,10 +5520,11 @@ the `_detectionUserOverridden` / explicit-intent flags that would suppress a
 separate landed behaviour. Pinned in `src/reasonableDefaults.test.mjs` (feather,
 detection, OUTSIDE opacity) and `src/data/layerState.test.mjs` (3D).
 
-**The 2026-08-24 defaults** (superseding the interim 08-23 values of 8%/3%):
+**Current defaults** (scope feather revised to 100% on 2026-10-25;
+detection and outside opacity retain the 2026-08-24 defaults):
 the first-run look is Detection DENSE
-`75%`, ELASTIC allocation, Fade `7%`, OUTSIDE opacity `1%`, scope feather `11%`,
-and 3D fleet mode PROXIMITY, with `AIRCRAFT_BRACKET_FLOOR_ANCHOR` at `0.01` so
+`75%`, ELASTIC allocation, Fade `7%`, OUTSIDE opacity `1%`, Scope ON with feather
+`100%`, and 3D fleet mode PROXIMITY, with `AIRCRAFT_BRACKET_FLOOR_ANCHOR` at `0.01` so
 brackets keep their approved brightness exactly at the new OUTSIDE default. Two
 terms that must never be conflated: scope FEATHER softens the black scope-mask
 edge; detection FADE is the label/card fading band around the keyhole. The
@@ -5592,8 +5594,9 @@ easier to meet (detection is now on more often), but does not create it.
   calibrated so `AIRCRAFT_BRACKET_ALPHA_FLOOR` (0.35) lands exactly at the
   default, and the mapping follows bracket brightness rather than slider
   position. The `ko` PARSE fallback stays at `5`.
-- **Scope feather: `11%`** — a soft scope-mask edge (moved `0% → 8% → 11%`; `0%` hard crop for one day,
-  `35%` before that). `SCOPE_FEATHER_RATIO_DEFAULT` in `src/scopeMask.js`,
+- **Scope: `ON`, feather: `100%`** — a broad, soft scope-mask edge (revised on
+  2026-10-25 from the prior `11%`; earlier defaults were `0%`, `8%` and `35%`).
+  `SCOPE_FEATHER_RATIO_DEFAULT` in `src/scopeMask.js`,
   mirrored by `#scope-feather-slider`'s markup value AND readout and
   `_scopeFeatherPct` in `sharelink.js`. The slider spans
   0–200, and an explicit `0` is still the hard-crop path — pinned, so moving the

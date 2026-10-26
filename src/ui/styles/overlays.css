@@ -386,11 +386,13 @@
   )
   .hud-readout,
 :root:not([data-ui-theme='cyber']) .scene-text-holdout {
-  background: rgba(0, 0, 0, 0.34);
-  box-shadow: 0 0 6px 3px rgba(0, 0, 0, 0.16);
+  background: rgba(0, 0, 0, 0.7);
+  box-shadow: none;
   border-radius: 2px;
-  padding: 1px 4px;
-  margin: -1px -4px;
+  padding-block: 0;
+  padding-inline: 6px;
+  margin-block: 0;
+  margin-inline: -6px;
   width: fit-content;
   max-width: 100%;
   box-sizing: content-box;
@@ -416,7 +418,7 @@
     [data-variant='tactical']
   )
   .hud-readout
-  :not(#hud-rec-dot) {
+  :where(:not(#hud-rec-dot)) {
   color: rgb(from var(--hud-color) r g b / 0.86);
   text-shadow:
     0 1px 2px rgba(0, 0, 0, 0.8),
@@ -431,7 +433,7 @@
   :is(.hud-top-right, .hud-bottom-right)
   .hud-readout,
 :root:not([data-ui-theme='cyber']) #style-indicator .scene-text-holdout {
-  margin-left: auto;
+  margin-inline-start: auto;
 }
 
 /* Rotating the backing with its text also covers both vertical annotations. */
@@ -443,7 +445,7 @@
   .hud-edge
   .hud-readout
   > * {
-  opacity: 0.72;
+  opacity: 0.78;
 }
 
 #intel-hud:is(
@@ -481,6 +483,11 @@
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+/* The title's inline text box needs a little vertical room around its glyphs. */
+:root:not([data-ui-theme='cyber']) #title-bar h1 > .scene-text-holdout {
+  padding-block: 0.12em;
 }
 
 :root:not([data-ui-theme='cyber']) #title-bar .subtitle {
