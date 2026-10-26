@@ -197,20 +197,20 @@ hard edge and 200% extends the gradient to the center while keeping its midpoint
 on the same keyhole edge. First run opens with Scope ON and feather 100%; links
 predating `scf` retain their historical 35% parse fallback.
 
-Tactical, Operator and Minimal give every telemetry readout a small 70%-black
-backing with rounded corners, including vertical metadata and multiline AIS.
-These darker backings have no shadow halo or overlap between adjacent lines. Glyphs keep
-the active style hue with stronger alpha, while the red REC dot retains its own
-color. Readout backing sits outside each glyph's opacity; Operator's corner and
-bar frames stay transparent rather than stacking another dark panel. Summary
-ellipsis and desktop single-line coordinates remain intact. The title, tagline,
-optional FPS and active-style readout use the same small backing. Minimal's
-lower coordinates clear map attribution. Cyber retains its existing skin.
+When Scope is OFF, Tactical, Operator and Minimal add small black backplates
+at 70% opacity behind telemetry, vertical metadata, multiline AIS and scene
+chrome. They have rounded corners, no halo and no overlap between adjacent lines.
+Text keeps its original color, glow and opacity in both Scope states. The engine
+publishes the OFF state as `data-scope-mask="off"` on the document root, so direct
+setters, share links and scene restoration drive the same treatment. Scope ON
+uses the original HUD layout, Operator frames and scene chrome, with no added
+backplates. The OFF-only Minimal coordinate offset clears map attribution.
+Cyber retains its existing skin.
 
 `node scripts/qa-scope-hud.mjs` exercises native checkbox click and Space,
 feather range and keyboard boundaries, all four layout transitions, share/scene
-restore, text-backing coverage and non-overlapping geometry, multiline AIS, summary clipping and
-narrow viewport containment. Optional `QA_SCREENSHOT_DIR` saves mode screenshots.
+restore, original Scope ON styling, OFF-only backing coverage and non-overlapping
+geometry, multiline AIS, summary clipping and narrow viewport containment. Optional `QA_SCREENSHOT_DIR` saves mode screenshots.
 
 ## Cyber HUD — September 30, 2026
 

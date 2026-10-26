@@ -56,6 +56,45 @@ const readScope = () =>
     };
   });
 
+const readHudGlyphs = () =>
+  page.evaluate(() => {
+    const hud = document.getElementById('intel-hud');
+    const probe = document.createElement('span');
+    probe.style.display = 'none';
+    hud.appendChild(probe);
+    const baseline = {
+      color: getComputedStyle(probe).color,
+      shadow: getComputedStyle(probe).textShadow,
+    };
+    probe.remove();
+    const glyphs = [
+      '.hud-mode',
+      '.hud-system',
+      '.hud-summary-label',
+      '.hud-summary',
+      '.hud-orbital',
+      '#hud-mgrs',
+      '#hud-coll',
+    ].map((selector) => {
+      const el = hud.querySelector(selector);
+      const style = getComputedStyle(el);
+      let opacity = 1;
+      for (
+        let current = el;
+        current && current !== hud;
+        current = current.parentElement
+      )
+        opacity *= Number(getComputedStyle(current).opacity);
+      return {
+        selector,
+        color: style.color,
+        shadow: style.textShadow,
+        opacity,
+      };
+    });
+    return { baseline, glyphs };
+  });
+
 async function openApplication(url) {
   await page.goto(url.href, { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(
@@ -245,6 +284,79 @@ try {
 
   for (const layout of ['minimal', 'operator', 'tactical']) {
     await page.select('#hud-layout-select', layout);
+    await page.evaluate(() =>
+      window.__godsEyeView.styleManager.applyVisualState({
+        scope: { enabled: true, featherPct: 100 },
+      }),
+    );
+    const originalGlyphs = await readHudGlyphs();
+    const original = await page.evaluate(() => {
+      const hud = document.getElementById('intel-hud');
+      const wrappers = [...hud.querySelectorAll('.hud-readout')];
+      const scene = [...document.querySelectorAll('.scene-text-holdout')];
+      const unbacked = [...wrappers, ...scene].every(
+        (el) =>
+          getComputedStyle(el).backgroundColor === 'rgba(0, 0, 0, 0)' &&
+          getComputedStyle(el).boxShadow === 'none',
+      );
+      return {
+        markerAbsent: !document.documentElement.hasAttribute('data-scope-mask'),
+        unbacked,
+        wrappersTransparent: wrappers.every(
+          (el) => getComputedStyle(el).display === 'contents',
+        ),
+        operatorFrame:
+          hud.dataset.variant !== 'operator' ||
+          (getComputedStyle(hud.querySelector('.hud-corner'))
+            .backgroundColor === 'rgba(0, 0, 0, 0.36)' &&
+            getComputedStyle(hud.querySelector('.hud-top-bar'))
+              .backgroundImage !== 'none'),
+      };
+    });
+    check(
+      `${layout}: Scope ON retains the original presentation without new backplates`,
+      original.markerAbsent &&
+        original.unbacked &&
+        original.wrappersTransparent &&
+        original.operatorFrame,
+      original,
+    );
+    check(
+      `${layout}: original HUD color, glow and metadata alpha remain intact`,
+      originalGlyphs.glyphs.every(
+        (glyph) =>
+          glyph.color === originalGlyphs.baseline.color &&
+          glyph.shadow === originalGlyphs.baseline.shadow,
+      ) &&
+        originalGlyphs.glyphs.find(
+          (glyph) => glyph.selector === '.hud-summary-label',
+        ).opacity === 0.55 &&
+        originalGlyphs.glyphs.find((glyph) => glyph.selector === '.hud-orbital')
+          .opacity === 0.7 &&
+        originalGlyphs.glyphs.find((glyph) => glyph.selector === '#hud-coll')
+          .opacity === 0.5,
+      originalGlyphs,
+    );
+    if (process.env.QA_SCREENSHOT_DIR) {
+      fs.mkdirSync(process.env.QA_SCREENSHOT_DIR, { recursive: true });
+      await page.screenshot({
+        path: path.join(
+          process.env.QA_SCREENSHOT_DIR,
+          `scope-on-${layout}.png`,
+        ),
+      });
+    }
+    await page.evaluate(() =>
+      window.__godsEyeView.styleManager.applyVisualState({
+        scope: { enabled: false },
+      }),
+    );
+    const backedGlyphs = await readHudGlyphs();
+    check(
+      `${layout}: Scope OFF adds backing without changing glyph styles`,
+      JSON.stringify(backedGlyphs) === JSON.stringify(originalGlyphs),
+      backedGlyphs,
+    );
     const coverage = await page.evaluate(() => {
       const hud = document.getElementById('intel-hud');
       const walker = document.createTreeWalker(hud, NodeFilter.SHOW_TEXT);
@@ -340,6 +452,7 @@ try {
           getComputedStyle(el).backgroundColor !== 'rgba(0, 0, 0, 0)',
       );
       return {
+        scopeOff: document.documentElement.dataset.scopeMask === 'off',
         visible,
         missing,
         empty,
@@ -351,7 +464,8 @@ try {
     });
     check(
       `${layout}: all visible HUD text has one backing`,
-      coverage.visible > 0 &&
+      coverage.scopeOff &&
+        coverage.visible > 0 &&
         coverage.missing.length === 0 &&
         coverage.empty === 0 &&
         coverage.broadBackings === 0,

@@ -157,12 +157,14 @@ function stubScopeMaskDom({ width = 1000, height = 800, dpr = 1 } = {}) {
       removeEventListener: (type, fn) => listeners.delete(fn),
     }),
   };
-  globalThis.document = { createElement: () => canvas };
+  const documentElement = { dataset: {} };
+  globalThis.document = { documentElement, createElement: () => canvas };
   globalThis.ResizeObserver = class { observe() {} disconnect() {} };
   const container = { clientWidth: width, clientHeight: height, appendChild() {} };
   return {
     canvas,
     container,
+    documentElement,
     /** Canvas work counters: backing-store resizes, clears, fills. */
     ops,
     /** Every fillStyle string assigned since install (hard-crop path). */
@@ -180,6 +182,29 @@ function stubScopeMaskDom({ width = 1000, height = 800, dpr = 1 } = {}) {
     },
   };
 }
+
+test('scope appearance follows direct state changes and install/destroy lifecycles', () => {
+  const dom = stubScopeMaskDom();
+  try {
+    setScopeMaskEnabled(false);
+    assert.equal(dom.documentElement.dataset.scopeMask, 'off');
+    delete dom.documentElement.dataset.scopeMask;
+    installScopeMask({ container: dom.container });
+    assert.equal(dom.documentElement.dataset.scopeMask, 'off', 'install publishes retained OFF state');
+    destroyScopeMask();
+    assert.equal(dom.documentElement.dataset.scopeMask, undefined, 'destroy clears the document marker');
+    installScopeMask({ container: dom.container });
+    assert.equal(dom.documentElement.dataset.scopeMask, 'off', 'reinstall retains the preference');
+    setScopeMaskEnabled(true);
+    assert.equal(dom.documentElement.dataset.scopeMask, undefined, 'ON uses the original presentation');
+    setScopeMaskEnabled(false);
+    _resetScopeMaskForTest();
+    assert.equal(dom.documentElement.dataset.scopeMask, undefined, 'test reset clears the marker');
+  } finally {
+    destroyScopeMask();
+    dom.restore();
+  }
+});
 
 test('a DPR change with no resize still repaints the backing store', () => {
   const dom = stubScopeMaskDom({ width: 1000, height: 800, dpr: 1 });

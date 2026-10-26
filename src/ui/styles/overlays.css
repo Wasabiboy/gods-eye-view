@@ -372,20 +372,19 @@
   max-width: 280px;
 }
 
-/* Text-sized black backing keeps bright imagery from washing out telemetry.
-   The backing wraps each readout outside its existing opacity, so dim metadata
-   keep their hierarchy as contrast increases; the REC dot stays red. */
+/* Scope OFF adds text-sized backing; Scope ON retains the original HUD. */
 .hud-readout {
   display: contents;
 }
 
-#intel-hud:is(
+:root[data-scope-mask='off']
+  #intel-hud:is(
     [data-variant='minimal'],
     [data-variant='operator'],
     [data-variant='tactical']
   )
   .hud-readout,
-:root:not([data-ui-theme='cyber']) .scene-text-holdout {
+:root[data-scope-mask='off']:not([data-ui-theme='cyber']) .scene-text-holdout {
   background: rgba(0, 0, 0, 0.7);
   box-shadow: none;
   border-radius: 2px;
@@ -399,7 +398,8 @@
   white-space: nowrap;
 }
 
-#intel-hud:is(
+:root[data-scope-mask='off']
+  #intel-hud:is(
     [data-variant='minimal'],
     [data-variant='operator'],
     [data-variant='tactical']
@@ -412,72 +412,53 @@
   white-space: nowrap;
 }
 
-#intel-hud:is(
-    [data-variant='minimal'],
-    [data-variant='operator'],
-    [data-variant='tactical']
-  )
-  .hud-readout
-  :where(:not(#hud-rec-dot)) {
-  color: rgb(from var(--hud-color) r g b / 0.86);
-  text-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.8),
-    0 0 4px var(--hud-glow);
-}
-
-#intel-hud:is(
+:root[data-scope-mask='off']
+  #intel-hud:is(
     [data-variant='minimal'],
     [data-variant='operator'],
     [data-variant='tactical']
   )
   :is(.hud-top-right, .hud-bottom-right)
   .hud-readout,
-:root:not([data-ui-theme='cyber']) #style-indicator .scene-text-holdout {
+:root[data-scope-mask='off']:not([data-ui-theme='cyber'])
+  #style-indicator
+  .scene-text-holdout {
   margin-inline-start: auto;
 }
 
 /* Rotating the backing with its text also covers both vertical annotations. */
-#intel-hud:is([data-variant='operator'], [data-variant='tactical']) .hud-edge {
+:root[data-scope-mask='off']
+  #intel-hud:is([data-variant='operator'], [data-variant='tactical'])
+  .hud-edge {
   opacity: 1;
 }
 
-#intel-hud:is([data-variant='operator'], [data-variant='tactical'])
+:root[data-scope-mask='off']
+  #intel-hud:is([data-variant='operator'], [data-variant='tactical'])
   .hud-edge
   .hud-readout
   > * {
-  opacity: 0.78;
-}
-
-#intel-hud:is(
-    [data-variant='minimal'],
-    [data-variant='operator'],
-    [data-variant='tactical']
-  )
-  :is(
-    .hud-top-bar-left,
-    .hud-top-bar-right,
-    .hud-summary-label,
-    .hud-orbital,
-    .hud-ais-vessel:not(.active)
-  ) {
-  opacity: 0.78;
+  opacity: 0.5;
 }
 
 /* One backing per line; the operator's frames stay light and transparent. */
-#intel-hud[data-variant='operator'] .hud-corner,
-#intel-hud:is([data-variant='minimal'], [data-variant='operator'])
+:root[data-scope-mask='off'] #intel-hud[data-variant='operator'] .hud-corner,
+:root[data-scope-mask='off']
+  #intel-hud:is([data-variant='minimal'], [data-variant='operator'])
   :is(.hud-top-bar, .hud-bottom-bar) {
   background: transparent;
 }
 
-#intel-hud:is([data-variant='minimal'], [data-variant='operator'])
+:root[data-scope-mask='off']
+  #intel-hud:is([data-variant='minimal'], [data-variant='operator'])
   :is(.hud-top-bar, .hud-bottom-bar) {
   width: fit-content;
   max-width: calc(100vw - 120px);
   gap: 24px;
 }
 
-#intel-hud:is([data-variant='minimal'], [data-variant='operator'])
+:root[data-scope-mask='off']
+  #intel-hud:is([data-variant='minimal'], [data-variant='operator'])
   :is(.hud-top-bar, .hud-bottom-bar)
   .hud-readout {
   overflow: hidden;
@@ -486,23 +467,31 @@
 }
 
 /* The title's inline text box needs a little vertical room around its glyphs. */
-:root:not([data-ui-theme='cyber']) #title-bar h1 > .scene-text-holdout {
+:root[data-scope-mask='off']:not([data-ui-theme='cyber'])
+  #title-bar
+  h1
+  > .scene-text-holdout {
   padding-block: 0.12em;
 }
 
-:root:not([data-ui-theme='cyber']) #title-bar .subtitle {
+:root[data-scope-mask='off']:not([data-ui-theme='cyber']) #title-bar .subtitle {
   margin-top: 8px;
 }
 
-:root:not([data-ui-theme='cyber']) #style-indicator .indicator-value {
+:root[data-scope-mask='off']:not([data-ui-theme='cyber'])
+  #style-indicator
+  .indicator-value {
   margin-top: 4px;
 }
 
-#intel-hud[data-variant='minimal']
+:root[data-scope-mask='off']
+  #intel-hud[data-variant='minimal']
   .hud-readout:has(> :is(.hud-classification, .hud-system)) {
   display: none;
 }
 
-:root:not([data-ui-theme='cyber']) #title-bar .frame-rate-readout {
+:root[data-scope-mask='off']:not([data-ui-theme='cyber'])
+  #title-bar
+  .frame-rate-readout {
   margin-top: 6px;
 }

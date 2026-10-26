@@ -429,6 +429,14 @@ function draw() {
   _painted = true;
 }
 
+/** Expose only the OFF state; an absent attribute preserves the original HUD. */
+function syncScopeMaskAppearance(enabled = _enabled) {
+  const dataset = globalThis.document?.documentElement?.dataset;
+  if (!dataset) return;
+  if (enabled) delete dataset.scopeMask;
+  else dataset.scopeMask = 'off';
+}
+
 /**
  * Install the scope mask into the viewer container. Idempotent.
  * @param {Cesium.Viewer} viewer
@@ -436,6 +444,7 @@ function draw() {
  */
 export function installScopeMask(viewer) {
   if (_canvas || !viewer?.container) return;
+  syncScopeMaskAppearance();
   _container = viewer.container;
   _viewer = viewer;
   _canvas = document.createElement('canvas');
@@ -511,6 +520,7 @@ export function setScopeMaskEnabled(enabled) {
   const next = Boolean(enabled);
   const reEnabled = next && !_enabled;
   _enabled = next;
+  syncScopeMaskAppearance();
   if (reEnabled) {
     // The camera moved freely while the scope was off and nothing sampled it,
     // so the painted terminus can be a whole altitude band stale. Re-sync once
@@ -549,6 +559,7 @@ export function getScopeMaskFeather() {
  * @returns {void}
  */
 export function destroyScopeMask() {
+  syncScopeMaskAppearance(true);
   _resizeObserver?.disconnect();
   _resizeObserver = null;
   teardownDevicePixelRatioWatch();
@@ -562,6 +573,7 @@ export function destroyScopeMask() {
 
 /** Test seam. */
 export function _resetScopeMaskForTest() {
+  syncScopeMaskAppearance(true);
   _resizeObserver?.disconnect();
   _resizeObserver = null;
   teardownDevicePixelRatioWatch();
