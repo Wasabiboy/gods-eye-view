@@ -1,17 +1,15 @@
 /**
- * Vertical tab strip for the right context rail.
+ * Vertical tab strip for the right context rail: one sideways tab per rail
+ * panel, the open panel beside the strip, at most one panel open. The panels'
+ * `collapsed` classes remain the only state; the strip mirrors them and asks
+ * the owner (setPanelCollapsed) for every change, so persistence, share links
+ * and the rail layout pass are untouched. Phones hide the strip and keep their
+ * sheet shell (mobileShell.js).
  *
- * The strip replaces the rail's collapsed launcher cards: one sideways tab per
- * rail panel, the open panel beside the strip, at most one panel open. The
- * panels' `collapsed` classes remain the only state. The strip mirrors them and
- * asks the owner (setPanelCollapsed) for every change, so persistence, share
- * links and the rail layout pass are untouched. Phones hide the strip and keep
- * their sheet shell (mobileShell.js).
- *
- * The open tab and its panel are drawn as one surface: the strip measures
- * both, traces their joined silhouette as an SVG path (railJoinPath) and keeps
- * a join element under the panels whose layers blur, tint, outline and shadow
- * that one shape (styles/right-rail-tabs.css).
+ * The open tab and its panel are one surface: the strip measures both, traces
+ * their joined silhouette as an SVG path (railJoinPath) and keeps a join
+ * element under the panels whose layers blur, tint, outline and shadow that
+ * shape (styles/right-rail-tabs.css).
  */
 import { msg, t } from '../i18n/index.js';
 
@@ -19,8 +17,7 @@ export const RIGHT_RAIL_TABS_ID = 'right-rail-tabs';
 
 /**
  * Marks the rail while its strip is mounted; styles/right-rail-tabs.css keys
- * the rail's tab geometry on it so a rail without a strip keeps its legacy
- * layout.
+ * the tab geometry on it, so a rail without a strip keeps its plain layout.
  */
 export const RIGHT_RAIL_TABS_ATTRIBUTE = 'data-rail-tabs';
 
@@ -242,8 +239,8 @@ export function createRightRailTabs({
   const observer =
     typeof Observer === 'function' ? new Observer(() => sync()) : null;
   // Tab heights follow their labels (fonts, locale) and panel heights their
-  // content and the rail's allocation, so the join is re-measured whenever
-  // the strip, a tab or a panel changes size or the strip scrolls.
+  // content and allocation: re-measure the join on any size change and on
+  // strip scroll.
   const Resize = documentRef.defaultView?.ResizeObserver;
   const resizer =
     typeof Resize === 'function' ? new Resize(() => sync()) : null;
@@ -265,11 +262,11 @@ export function createRightRailTabs({
   };
 
   /**
-   * Publish the join: the open tab's extent on the rail (--rail-tab-top,
-   * --rail-tab-bottom, rail pixels, for the panel's minimum height) and the
-   * joined silhouette on the join element's layers. The rail itself can be
-   * taller than its panel in the focus layout, so the join is sized from
-   * the panel, extended down to cover the tab if the panel is shorter.
+   * Publish the join: the open tab's extent on the rail (--rail-tab-top and
+   * --rail-tab-bottom, rail pixels; the stylesheet sets the panel's minimum
+   * height from them) and the joined silhouette on the join's layers. The
+   * rail can be taller than its panel in the focus layout, so the join is
+   * sized from the panel, extended down to cover the tab if that is shorter.
    */
   function placeJoin(tab, panel) {
     const style = rail.style;

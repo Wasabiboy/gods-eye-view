@@ -70,13 +70,11 @@ export class PanelPositionControls {
         // storage unavailable
       }
     }
-    // DISPLAY starts EXPANDED for a first-time visitor on a desktop viewport,
-    // where the right rail is a strip of label tabs (rightRailTabs.js): with
-    // every panel closed nothing shows that the labels are launchers, so the
-    // first panel opens to demonstrate the strip. Phones keep it collapsed
-    // (their sheets present the rail), and a share link decides for itself.
-    // A stored choice still wins in both directions, so anyone who closes it
-    // keeps it closed.
+    // DISPLAY starts EXPANDED for a first-time visitor on a desktop viewport:
+    // the right rail is a strip of label tabs (rightRailTabs.js), and with
+    // every panel closed nothing shows that the labels are launchers. Phones
+    // keep it collapsed (their sheets present the rail); a share link decides
+    // for itself. A stored choice wins in both directions.
     if (panelId === 'pp-toggles' && stored === null)
       collapsed = !allowStored || isPhoneViewport();
     panelEl.classList.toggle('collapsed', collapsed);

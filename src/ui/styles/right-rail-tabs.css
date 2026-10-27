@@ -4,19 +4,15 @@
    exclusive layout (rightPanelRail.js) hides the collapsed ones, so the strip
    is the only launcher. Phones keep the sheet shell (mobile-shell.css).
 
-   The open tab and its panel are one surface. The strip builds a join
-   element (.right-rail-join) under the panels from the measured geometry:
-   one path traces the silhouette of the panel with the tab attached to its
-   right edge (rounded corners, concave fillets at the junction; Cyber's
-   chamfered frame instead). The glass layer blurs and tints the backdrop
-   inside that path, an SVG strokes the outline along it and another SVG
-   casts the drop shadow, so there is no seam, no doubled edge and no second
-   blur region where the tab meets the panel. The open panel's card and the
-   tab draw no surface of their own; the other tabs are borderless labels.
-   The strip also publishes --rail-tab-bottom on the rail so a short panel
-   grows down to its tab. `data-rail-tabs` arrives on the rail with the
-   strip, so a rail without it keeps its legacy geometry; the selectors carry
-   it so they outrank the Cyber rail rules that follow this sheet.          */
+   The open tab and its panel are one surface. The strip builds a join element
+   (.right-rail-join) under the panels: one path traces the panel with the tab
+   attached (rounded corners and concave fillets; Cyber's chamfered frame).
+   The glass layer blurs and tints the backdrop inside the path, one SVG
+   strokes the outline and another casts the shadow, so the junction has no
+   seam and no second blur region. The open panel and the tab draw no surface
+   of their own; the other tabs are plain labels. `data-rail-tabs` arrives on
+   the rail with the strip, so a rail without it keeps its plain geometry; the
+   selectors carry it to outrank the Cyber rail rules that follow this sheet. */
 
 #right-context-rail[data-rail-tabs] {
   --right-rail-panel-width: 330px;
@@ -160,8 +156,8 @@ body.mobile-shell #right-context-rail > .right-rail-join {
 }
 
 /* The open panel's card leaves surface, outline and shadow to the join.
-   Cyber draws Display's and Context's frames, and the surface contract its
-   card, on a ::before. */
+   Cyber's Display and Context frames and the surface contract's card live on
+   a ::before. */
 body:not(.mobile-shell)
   #right-context-rail[data-rail-tabs]
   > #pp-toggles:not(.collapsed),
@@ -190,7 +186,8 @@ body:not(.mobile-shell)
   -webkit-backdrop-filter: none;
 }
 
-/* The card's glow used to sit under its own surface; keep it as faint. */
+/* The glow's 0.25 is tuned to sit under the card's surface; without that
+   surface, 0.08 reads the same. */
 body:not(.mobile-shell)
   #right-context-rail[data-rail-tabs]
   > [data-panel-id]:not(.collapsed)
@@ -256,9 +253,8 @@ body:not(.mobile-shell)
   color: var(--cyber-red-bright);
 }
 
-/* Cyber also dresses every .panel-collapsible wrapper as a surface with an
-   inset ring (cyber.css); under the tabs the join is the only surface, or
-   the ring shows as a line along the panel's edge beside the open tab. */
+/* Cyber gives every .panel-collapsible wrapper a surface with an inset ring
+   (cyber.css); beside the open tab that ring would show as a line. */
 :root[data-ui-theme='cyber']
   body:not(.mobile-shell)
   #right-context-rail[data-rail-tabs]

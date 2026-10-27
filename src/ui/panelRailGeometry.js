@@ -62,14 +62,11 @@ export function resolveHudRailLayout({
 }
 
 /**
- * The right rail's tab strip (rightRailTabs.js) is the launcher in every HUD
- * layout, so a collapsed panel never stays visible as a card. The rail state
- * argument is accepted for callers that describe what they lay out.
- *
- * @param {object} [input] Current rail state.
- * @param {string} [input.hudVariant] Active HUD layout variant.
- * @param {boolean} [input.hasExpandedPanel] Whether any rail panel is expanded.
- * @returns {boolean} Whether collapsed sibling panels should be hidden.
+ * The tab strip (rightRailTabs.js) is the launcher in every HUD layout, so
+ * collapsed right-rail panels always hide. Callers still pass the rail state
+ * they lay out.
+ * @param {{hudVariant?: string, hasExpandedPanel?: boolean}} [input]
+ * @returns {boolean}
  */
 export function shouldHideCollapsedRightPanels(input = {}) {
   void input;
