@@ -1517,8 +1517,8 @@ panel's edge; Cyber's chamfered frame with its calibration bay and a square
 tab instead) and keeps a join element under the panels: one layer blurs and
 tints the backdrop inside the path, an SVG strokes the outline along it and
 another SVG casts the drop shadow, so the junction has no seam, doubled edge
-or second blur region. The open panel's card and the tab draw no surface,
-border, shadow or blur of their own. The join is re-measured through a
+or second blur region. The open panel's wrapper and card and the tab draw no
+surface, border, shadow or blur of their own (Cyber dresses the wrapper too). The join is re-measured through a
 ResizeObserver and on strip scroll; `--rail-tab-bottom` on the rail sets the
 open panel's minimum height, so a short panel such as Context still reaches
 its tab. A first tab level with the panel's top shares its top edge, with no
