@@ -8,6 +8,7 @@ import {
   collapsePanelOnEscape,
   createHoverDisclosure,
 } from './panelDisclosure.js';
+import { createRightRailTabs } from './rightRailTabs.js';
 const SHARE_PANEL_STATE_SPECS = Object.freeze([
   { id: 'control-panel', pinnable: true },
   { id: 'location-bar', pinnable: true },
@@ -102,6 +103,16 @@ export class PanelChrome {
     for (const control of this._panelDisclosureControls || [])
       control.destroy();
     this._panelDisclosureControls = [];
+    // The right rail's launchers are a vertical tab strip; the tabs ask this
+    // owner for every change so persistence and share links see one path.
+    this._rightRailTabs?.destroy();
+    this._rightRailTabs = this._rightPanelStack
+      ? createRightRailTabs({
+          rail: this._rightPanelStack,
+          setPanelCollapsed: (panelId, collapsed, options) =>
+            this.setPanelCollapsed(panelId, collapsed, options),
+        })
+      : null;
     const targets = new Map();
     document
       .querySelectorAll('.panel-collapse-btn[data-collapse-target]')
@@ -385,7 +396,7 @@ export class PanelChrome {
       // restore the user's explicit expanded preference at its own viewport.
       const collapsed =
         panelEl.classList.contains('layout-auto-collapsed') ||
-        panelEl.classList.contains('cyber-accordion-collapsed')
+        panelEl.classList.contains('rail-owner-collapsed')
           ? false
           : panelEl.classList.contains('collapsed');
       // A panel the phone shell only borrowed for a sheet shares its own state.
@@ -443,14 +454,15 @@ export class PanelChrome {
     const nextCollapsed = Boolean(collapsed);
     const wasAutoCollapsed =
       panelEl.classList.contains('layout-auto-collapsed') ||
-      panelEl.classList.contains('cyber-accordion-collapsed');
-    // A user opening a Cyber rail panel owns the whole accordion, including
-    // peers that were only presentation-collapsed during a saved-state restore.
+      panelEl.classList.contains('rail-owner-collapsed');
+    // The right rail is a set of vertical tabs: a user opening one panel owns
+    // the rail, including peers that were only presentation-collapsed during
+    // a saved-state restore.
     if (
       explicit &&
       !restore &&
       !nextCollapsed &&
-      document.documentElement?.dataset.uiTheme === 'cyber' &&
+      this._rightPanelStack &&
       panelEl.parentElement === this._rightPanelStack &&
       // Phone sheets show several rail panels at once.
       !document.body?.classList?.contains('mobile-shell')
@@ -539,10 +551,7 @@ export class PanelChrome {
       }
       return;
     }
-    panelEl.classList.remove(
-      'layout-auto-collapsed',
-      'cyber-accordion-collapsed',
-    );
+    panelEl.classList.remove('layout-auto-collapsed', 'rail-owner-collapsed');
     if (
       !nextCollapsed &&
       this.cockpitView?.active &&
@@ -665,6 +674,8 @@ export class PanelChrome {
     this._disposed = true;
     this._lifetime.destroy();
     this._panelLayout.destroy();
+    this._rightRailTabs?.destroy();
+    this._rightRailTabs = null;
     for (const control of this._panelDisclosureControls || [])
       control.destroy();
     this._panelDisclosureControls = [];

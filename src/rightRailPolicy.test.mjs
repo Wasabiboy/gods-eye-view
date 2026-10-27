@@ -7,29 +7,16 @@ import {
   shouldHideCollapsedRightPanels,
 } from './rightRailPolicy.js';
 
-test('Tactical HUD hides collapsed right-rail siblings while one panel is expanded', () => {
-  assert.equal(shouldHideCollapsedRightPanels({
-    hudVariant: 'tactical',
-    hasExpandedPanel: true,
-  }), true);
-});
-
-test('collapsed launchers remain when Tactical has no expanded panel', () => {
-  assert.equal(shouldHideCollapsedRightPanels({
-    hudVariant: 'tactical',
-    hasExpandedPanel: false,
-  }), false);
-});
-
-test('other HUD layouts keep collapsed right-rail launchers visible', () => {
-  assert.equal(shouldHideCollapsedRightPanels({
-    hudVariant: 'minimal',
-    hasExpandedPanel: true,
-  }), false);
-  assert.equal(shouldHideCollapsedRightPanels({
-    hudVariant: 'full',
-    hasExpandedPanel: true,
-  }), false);
+test('the tab strip is the launcher in every HUD layout, so collapsed right-rail panels hide', () => {
+  for (const hudVariant of ['tactical', 'operator', 'minimal', 'cyber', 'full']) {
+    for (const hasExpandedPanel of [true, false]) {
+      assert.equal(
+        shouldHideCollapsedRightPanels({ hudVariant, hasExpandedPanel }),
+        true,
+        `${hudVariant} with${hasExpandedPanel ? '' : 'out'} an expanded panel`,
+      );
+    }
+  }
 });
 
 test('desktop Display participates in Tactical exclusivity without changing mobile Display behavior', () => {

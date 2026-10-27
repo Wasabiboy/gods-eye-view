@@ -1,15 +1,10 @@
-import {
-  allocatePanelStackHeights,
-  panelStackAutoCollapseIndices,
-} from '../panelStackLayout.js';
+import { allocatePanelStackHeights } from '../panelStackLayout.js';
 import {
   resolveHudRailLayout,
   shouldHideCollapsedRightPanels,
 } from './panelRailGeometry.js';
 
 import { displayPanelScroller } from './displayPanelScroll.js';
-
-const pendingCollapseRetries = new WeakSet();
 
 /**
  * Where the left rail's top will settle, not where it is mid-transition:
@@ -36,7 +31,9 @@ function settledLeftRailTop(leftStack, viewportHeight, getComputedStyle) {
 /**
  * Measure and place the right panel rail for one synchronous layout pass.
  * The caller owns scheduling, obstacle selection, disclosure preferences and
- * persistence. Auto-collapse is presentation only and reports through callbacks.
+ * persistence. The rail presents its panels as vertical tabs
+ * (rightRailTabs.js): one owner stays expanded, its peers are
+ * presentation-collapsed and hidden, and the owner takes the whole lane.
  * @param {object} options Live DOM and caller policy.
  * @param {HTMLElement} options.stack Rail element.
  * @param {Iterable<HTMLElement>} options.obstacles Caller-selected obstacle nodes.
@@ -44,7 +41,6 @@ function settledLeftRailTop(leftStack, viewportHeight, getComputedStyle) {
  * @param {{visible: boolean, variant: string}} options.hud Current HUD presentation.
  * @param {string} options.preferredPanelId Most recently opened panel.
  * @param {Function} options.onCollapse Update a panel's disclosure chrome.
- * @param {Function} options.onRetry Request another pass after automatic collapse.
  * @param {Function} [options.getComputedStyle] Optional DOM style reader override.
  * @param {HTMLElement} options.leftStack Rail supplying the shared top baseline.
  * @param {HTMLElement} options.displayPanel Panel whose allocation owns its scroll.
@@ -58,7 +54,6 @@ export function layoutRightPanelRail({
   hud,
   preferredPanelId,
   onCollapse,
-  onRetry,
   leftStack,
   displayPanel,
   readDisplayScrollTop,
@@ -66,8 +61,6 @@ export function layoutRightPanelRail({
   getComputedStyle = (element) => windowRef.getComputedStyle(element),
 }) {
   if (!stack) return;
-  // A collapse may schedule one follow-up, which only measures and allocates.
-  const isCollapseRetry = pendingCollapseRetries.delete(stack);
 
   // Other CSS may hide a panel, such as an event view: it is not laid out.
   // Exclusive presentation hides collapsed panels itself; those stay in the
@@ -81,19 +74,13 @@ export function layoutRightPanelRail({
       !panel.hidden &&
       (hiddenByRail(panel) || getComputedStyle(panel).display !== 'none'),
   );
-  if (!hud.visible || hud.variant !== 'tactical') {
-    for (const panel of panels.filter((item) =>
-      item.classList.contains('layout-auto-collapsed'),
-    )) {
-      panel.classList.remove('collapsed', 'layout-auto-collapsed');
-      onCollapse(panel);
-    }
-  }
-  // Normalize restored state and theme entry without overwriting saved panel
-  // preferences. This marker is distinct from Tactical's space-based collapse.
-  // Phones present the rail as tab sheets that show several panels at once.
+  // One expanded owner: the latest explicit disclosure, else the panel that
+  // holds keyboard focus, else the first. Peers are presentation-collapsed
+  // without overwriting saved panel preferences; the marker is distinct from
+  // the left rail's space-based collapse. Phones present the rail as tab
+  // sheets that show several panels at once, so they get every panel back.
   const isMobile = windowRef.matchMedia('(max-width: 720px)').matches;
-  if (hud.variant === 'cyber' && !isMobile) {
+  if (!isMobile) {
     const expanded = panels.filter(
       (panel) => !panel.classList.contains('collapsed'),
     );
@@ -103,13 +90,13 @@ export function layoutRightPanelRail({
       expanded[0];
     for (const panel of expanded) {
       if (panel === owner) continue;
-      panel.classList.add('collapsed', 'cyber-accordion-collapsed');
+      panel.classList.add('collapsed', 'rail-owner-collapsed');
       onCollapse(panel);
     }
   } else {
     for (const panel of panels) {
-      if (!panel.classList.contains('cyber-accordion-collapsed')) continue;
-      panel.classList.remove('collapsed', 'cyber-accordion-collapsed');
+      if (!panel.classList.contains('rail-owner-collapsed')) continue;
+      panel.classList.remove('collapsed', 'rail-owner-collapsed');
       onCollapse(panel);
     }
   }
@@ -181,14 +168,8 @@ export function layoutRightPanelRail({
     });
   }
 
-  // Auto-collapsed headers contribute the same need even when exclusive
-  // presentation hides them. Manually collapsed launchers keep their policy.
-  const measuredPanels = panels.filter(
-    (panel) =>
-      !exclusive ||
-      !panel.classList.contains('collapsed') ||
-      panel.classList.contains('layout-auto-collapsed'),
-  );
+  // Exclusive presentation hides collapsed panels, so only visible panels
+  // take room in the lane.
   const visiblePanels = panels.filter(
     (panel) => !exclusive || !panel.classList.contains('collapsed'),
   );
@@ -206,7 +187,7 @@ export function layoutRightPanelRail({
   // Do not toggle layout classes here: the class observer schedules new passes.
   stack.setAttribute('data-rail-measuring', '');
   try {
-    for (const panel of measuredPanels) {
+    for (const panel of visiblePanels) {
       naturalHeights.set(
         panel,
         Math.max(
@@ -223,11 +204,11 @@ export function layoutRightPanelRail({
   }
   const gap = parseFloat(getComputedStyle(stack).rowGap) || 0;
   const naturalHeight =
-    measuredPanels.reduce(
+    visiblePanels.reduce(
       (total, panel) => total + naturalHeights.get(panel),
       0,
     ) +
-    gap * Math.max(0, measuredPanels.length - 1);
+    gap * Math.max(0, visiblePanels.length - 1);
   const layout = resolveHudRailLayout({
     viewportHeight,
     panelHeight: naturalHeight,
@@ -254,26 +235,9 @@ export function layoutRightPanelRail({
         : total,
     0,
   );
-  const expandedPanelsInDomOrder = visiblePanels.filter(
+  const expandedPanels = visiblePanels.filter(
     (panel) => !panel.classList.contains('collapsed'),
   );
-  const focusedExpandedPanel = expandedPanelsInDomOrder.find((panel) =>
-    panel.contains(documentRef.activeElement),
-  );
-  const preferredExpandedPanel =
-    expandedPanelsInDomOrder.find((panel) => panel.id === preferredPanelId) ||
-    focusedExpandedPanel;
-  // Match the left lane: allocation order follows the latest explicit
-  // disclosure, not DOM order. A focused panel is the fallback owner so
-  // temporary presentation collapse never strands keyboard focus.
-  const expandedPanels = preferredExpandedPanel
-    ? [
-        preferredExpandedPanel,
-        ...expandedPanelsInDomOrder.filter(
-          (panel) => panel !== preferredExpandedPanel,
-        ),
-      ]
-    : expandedPanelsInDomOrder;
   const expandedAvailableHeight = Math.max(
     0,
     safeBottom -
@@ -285,28 +249,6 @@ export function layoutRightPanelRail({
     naturalHeights: expandedPanels.map((panel) => naturalHeights.get(panel)),
     availableHeight: expandedAvailableHeight,
   });
-  // Other HUD variants restore automatic collapse at the start of each pass.
-  // Do not immediately collapse those panels again and schedule a loop.
-  const autoCollapseIndices =
-    hud.visible && hud.variant === 'tactical'
-      ? panelStackAutoCollapseIndices({
-          naturalHeights: expandedPanels.map((panel) =>
-            naturalHeights.get(panel),
-          ),
-          allocatedHeights: expandedHeights,
-          collapseLaterPanels: shouldFocus && hud.variant === 'tactical',
-        })
-      : [];
-  if (!isCollapseRetry && autoCollapseIndices.length) {
-    for (const index of autoCollapseIndices) {
-      const panel = expandedPanels[index];
-      panel.classList.add('collapsed', 'layout-auto-collapsed');
-      onCollapse(panel);
-    }
-    pendingCollapseRetries.add(stack);
-    onRetry();
-    return;
-  }
   // Write-if-changed. This pass runs on the 500 ms stats cadence. Rewriting
   // an unchanged allocation wakes the world-overlay occluder observer and
   // defeats parked-idle render savings. Measurement leaves these values intact.

@@ -51,9 +51,9 @@ test('explicit Cyber opening collapses peers and claims their restoration lanes'
     assert.equal(f.context.classList.contains('collapsed'), true);
     assert.ok(f.saved.some(([id, collapsed]) => id === 'global-context-panel' && collapsed));
     assert.ok(f.claimed.some(([, id]) => id === 'global-context-panel'));
-    f.cctv.classList.add('cyber-accordion-collapsed');
+    f.cctv.classList.add('rail-owner-collapsed');
     f.owner.setPanelCollapsed('cctv-panel', true, { explicit: true });
-    assert.equal(f.cctv.classList.contains('cyber-accordion-collapsed'), false);
+    assert.equal(f.cctv.classList.contains('rail-owner-collapsed'), false);
   } finally { globalThis.document = prior; }
 });
 
@@ -71,17 +71,25 @@ test('opening already-expanded Radio reveals Context and closes Display', () => 
   } finally { globalThis.document = prior; }
 });
 
-test('non-Cyber explicit panels and restored preferences retain their existing policy', () => {
+test('every theme collapses rail peers on an explicit open and keeps restored preferences', () => {
   for (const theme of ['tactical', 'operator', 'minimal', 'cyber']) {
-    const f = fixture(theme), prior = globalThis.document;
-    globalThis.document = f.doc;
+    const prior = globalThis.document;
+    const explicit = fixture(theme);
+    globalThis.document = explicit.doc;
     try {
-      const options = theme === 'cyber' ? { restore: true, persist: false } : { explicit: true };
-      f.owner.setPanelCollapsed('pp-toggles', false, options);
-      f.owner.setPanelCollapsed('cctv-panel', false, options);
-      assert.equal(f.display.classList.contains('collapsed'), false);
-      assert.equal(f.cctv.classList.contains('collapsed'), false);
-      if (theme === 'cyber') assert.deepEqual(f.saved, []);
+      explicit.owner.setPanelCollapsed('pp-toggles', false, { explicit: true });
+      explicit.owner.setPanelCollapsed('cctv-panel', false, { explicit: true });
+      assert.equal(explicit.display.classList.contains('collapsed'), true, theme);
+      assert.equal(explicit.cctv.classList.contains('collapsed'), false, theme);
+    } finally { globalThis.document = prior; }
+    const restored = fixture(theme);
+    globalThis.document = restored.doc;
+    try {
+      restored.owner.setPanelCollapsed('pp-toggles', false, { restore: true, persist: false });
+      restored.owner.setPanelCollapsed('cctv-panel', false, { restore: true, persist: false });
+      assert.equal(restored.display.classList.contains('collapsed'), false, theme);
+      assert.equal(restored.cctv.classList.contains('collapsed'), false, theme);
+      assert.deepEqual(restored.saved, [], theme);
     } finally { globalThis.document = prior; }
   }
 });

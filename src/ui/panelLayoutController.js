@@ -304,7 +304,6 @@ export class PanelLayoutController {
       hud: this.readHud(),
       preferredPanelId: this._rightStackPreferredPanelId,
       onCollapse: (panel) => this._syncPanelCollapseButton(panel),
-      onRetry: () => this._scheduleRightPanelLayout(),
       leftStack: this._leftPanelStack,
       displayPanel: this._ppToggles,
       readDisplayScrollTop: this.readDisplayScrollTop,
