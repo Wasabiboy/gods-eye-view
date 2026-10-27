@@ -1524,6 +1524,15 @@ open panel's minimum height, so a short panel such as Context still reaches
 its tab. A first tab level with the panel's top shares its top edge, with no
 corner between them; Cyber's strip starts below the frame's upper chamfer.
 
+A first-time visitor on a desktop viewport finds Display open
+(`src/ui/panelPositionControls.js`): with every panel closed nothing shows
+that the sideways labels are launchers, so the first panel opens to
+demonstrate the strip. Phones keep it closed (their sheets present the
+rail), a share link decides for itself, and a stored choice wins either way.
+When the rail picks its one owner, a panel the visitor or a share link opened
+outranks one open only by default, so a stored CCTV choice is not displaced
+by the Display default.
+
 ## Phone layout
 
 At 720px and narrower, `src/ui/mobileShell.js` keeps the globe full screen and
@@ -2157,7 +2166,9 @@ fetching, trailing-24-hour filtering and partial-success caching are unchanged.
 > Missions · Environmental · Explore manually**. No layer and no optional API
 > call happens until a tile is clicked. The right-hand DISPLAY rail
 > (`pp-toggles`) now starts **collapsed** on a first run rather than expanded —
-> a stored collapse state still wins, as before.
+> a stored collapse state still wins, as before. (Superseded 2026-10-27 by the
+> right rail tabs: on a desktop viewport DISPLAY starts open again on a first
+> run; see "Right rail tabs".)
 >
 > **The ENVIRONMENTAL tile is quakes AND fires** — live USGS earthquakes plus
 > NASA FIRMS active fires (`layerIds: ['earthquakes', 'local-firms']`), with the

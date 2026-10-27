@@ -3,6 +3,8 @@
   an accordion of collapsed launcher cards: the open panel sits beside the
   strip and at most one panel is open in every desktop HUD layout. The open
   tab and its panel share one surface and one outline, like a folder tab; the
-  other tabs are plain labels. The tabs are a keyboard-navigable tablist,
-  Escape inside a panel returns focus to its tab, and saved preferences and
-  share links are unchanged. Phones keep their sheet shell (gekh, #1425).
+  other tabs are plain labels. A first-time visitor on a desktop finds Display
+  open, so the strip reads as launchers; a stored choice still wins. The tabs
+  are a keyboard-navigable tablist, Escape inside a panel returns focus to its
+  tab, and saved preferences and share links are unchanged. Phones keep their
+  sheet shell (gekh, #1425).

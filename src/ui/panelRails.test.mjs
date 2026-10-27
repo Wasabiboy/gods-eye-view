@@ -295,6 +295,31 @@ test('right layout uses keyboard focus when there is no preferred panel', () => 
   assert.equal(f.second.classList.contains('collapsed'), false);
 });
 
+test('right layout lets a stored or shared choice outrank a panel open only by default', () => {
+  // Display opens by default on a first desktop visit; a visitor who had
+  // opened CCTV keeps CCTV as the owner, whatever the rail order.
+  const f = fixture('right');
+  f.expand(f.first, 900);
+  f.expand(f.second, 900);
+  f.first.dataset.collapsedPreference = 'default';
+  f.second.dataset.collapsedPreference = 'stored';
+  f.run();
+  assert.equal(f.first.classList.contains('rail-owner-collapsed'), true);
+  assert.equal(f.second.classList.contains('collapsed'), false);
+  const g = fixture('right');
+  g.expand(g.first, 900);
+  g.expand(g.second, 900);
+  g.first.dataset.collapsedPreference = 'default';
+  g.second.dataset.collapsedPreference = 'default';
+  g.run();
+  assert.equal(
+    g.first.classList.contains('collapsed'),
+    false,
+    'all default: first wins',
+  );
+  assert.equal(g.second.classList.contains('rail-owner-collapsed'), true);
+});
+
 for (const collapsed of [true, false]) {
   test(`right layout ignores a hidden ${collapsed ? 'collapsed' : 'expanded'} panel`, () => {
     const baseline = fixture('right');

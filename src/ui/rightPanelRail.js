@@ -75,10 +75,12 @@ export function layoutRightPanelRail({
       (hiddenByRail(panel) || getComputedStyle(panel).display !== 'none'),
   );
   // One expanded owner: the latest explicit disclosure, else the panel that
-  // holds keyboard focus, else the first. Peers are presentation-collapsed
-  // without overwriting saved panel preferences; the marker is distinct from
-  // the left rail's space-based collapse. Phones present the rail as tab
-  // sheets that show several panels at once, so they get every panel back.
+  // holds keyboard focus, else one the visitor or a share link chose over one
+  // open only by default (panelPositionControls.js marks each), else the
+  // first. Peers are presentation-collapsed without overwriting saved panel
+  // preferences; the marker is distinct from the left rail's space-based
+  // collapse. Phones present the rail as tab sheets that show several panels
+  // at once, so they get every panel back.
   const isMobile = windowRef.matchMedia('(max-width: 720px)').matches;
   if (!isMobile) {
     const expanded = panels.filter(
@@ -87,6 +89,9 @@ export function layoutRightPanelRail({
     const owner =
       expanded.find((panel) => panel.id === preferredPanelId) ||
       expanded.find((panel) => panel.contains(documentRef?.activeElement)) ||
+      expanded.find(
+        (panel) => panel.dataset?.collapsedPreference !== 'default',
+      ) ||
       expanded[0];
     for (const panel of expanded) {
       if (panel === owner) continue;

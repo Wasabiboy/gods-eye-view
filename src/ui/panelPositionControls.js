@@ -13,6 +13,10 @@ const RETIRED_PANEL_KEY_PREFIXES = [
   `godsEyeView.${PANEL_POSITION_STORAGE_VERSION}.panelPos.`,
   `godsEyeView.${PANEL_POSITION_STORAGE_VERSION}.panelFloatHintShown`,
 ];
+/** Phones present the rail as sheets (mobileShell.js), not as a tab strip. */
+const isPhoneViewport = () =>
+  globalThis.matchMedia?.('(max-width: 720px)')?.matches === true;
+
 export class PanelPositionControls {
   constructor({ syncPanelCollapseButton, showToast }) {
     this._syncPanelCollapseButton = syncPanelCollapseButton;
@@ -66,15 +70,15 @@ export class PanelPositionControls {
         // storage unavailable
       }
     }
-    // DISPLAY starts COLLAPSED for a first-time visitor, then respects the
-    // user's persisted choice like every other panel.
-    //
-    // It used to start expanded, to advertise the HUD / DETECT / 3D toggles.
-    // That reason expired when those became ON by default: the rail now opens
-    // to offer controls for things already happening, while competing with the
-    // first-run mission card for the one first impression there is. A stored
-    // choice still wins in both directions, so anyone who opens it keeps it.
-    if (panelId === 'pp-toggles' && stored === null) collapsed = true;
+    // DISPLAY starts EXPANDED for a first-time visitor on a desktop viewport,
+    // where the right rail is a strip of label tabs (rightRailTabs.js): with
+    // every panel closed nothing shows that the labels are launchers, so the
+    // first panel opens to demonstrate the strip. Phones keep it collapsed
+    // (their sheets present the rail), and a share link decides for itself.
+    // A stored choice still wins in both directions, so anyone who closes it
+    // keeps it closed.
+    if (panelId === 'pp-toggles' && stored === null)
+      collapsed = !allowStored || isPhoneViewport();
     panelEl.classList.toggle('collapsed', collapsed);
     // Bodies that expand themselves on first appearance must not override a
     // choice the user (or a share link) already made.
