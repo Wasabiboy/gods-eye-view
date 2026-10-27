@@ -4,36 +4,62 @@
    exclusive layout (rightPanelRail.js) hides the collapsed ones, so the strip
    is the only launcher. Phones keep the sheet shell (mobile-shell.css).
 
-   One glass card per tab, labels read top to bottom like the HUD edge text.
-   `data-rail-tabs` arrives on the rail with the strip (rightRailTabs.js), so
-   a rail without it keeps its legacy geometry; the selectors carry it so they
-   outrank the Cyber rail rules that follow this sheet.                      */
+   The open tab and its panel read as one shape with one surface and one
+   outline. The panel card keeps its glass surface but draws no border of its
+   own; the rail's ::before draws the outline around the card with a notch
+   where the tab joins, the open tab closes the shape with its own top, right
+   and bottom borders, and two concave fillets (the tab's ::before/::after)
+   round the inner corners. The strip publishes the join on the rail
+   (rightRailTabs.js): --rail-tab-top/--rail-tab-bottom place the notch and
+   set the panel's minimum height, so a short panel still reaches its tab,
+   and --rail-panel-height sizes the outline, since the rail itself can be
+   taller than its panel. The other tabs are borderless labels. `data-rail-tabs` arrives on the
+   rail with the strip, so a rail without it keeps its legacy geometry; the
+   selectors carry it so they outrank the Cyber rail rules that follow this
+   sheet.                                                                    */
 
 #right-context-rail[data-rail-tabs] {
   --right-rail-panel-width: 330px;
+  --right-rail-display-width: var(--display-panel-expanded-width);
   --right-rail-tabs-width: 34px;
-  --right-rail-tabs-gap: 10px;
+  /* The bridge the open tab reaches across to its panel. */
+  --right-rail-tabs-gap: 8px;
   --right-rail-tabs-inset: calc(
     var(--right-rail-tabs-width) + var(--right-rail-tabs-gap)
   );
+  --right-rail-tab-radius: 10px;
+  --right-rail-fillet: 8px;
+  --right-rail-corner: var(--panel-radius);
+  --right-rail-notch-top: max(
+    0px,
+    calc(var(--rail-tab-top, 0px) - var(--right-rail-fillet))
+  );
+  --right-rail-notch-bottom: min(
+    100%,
+    calc(var(--rail-tab-bottom, 0px) + var(--right-rail-fillet))
+  );
+  /* Lower fillet, a short straight run, then the panel's corner. */
+  --right-rail-panel-cover: calc(
+    var(--rail-tab-bottom, 0px) + var(--right-rail-fillet) + 4px +
+      var(--right-rail-corner)
+  );
   width: calc(var(--right-rail-panel-width) + var(--right-rail-tabs-inset));
   padding-right: var(--right-rail-tabs-inset);
-}
-
-:root[data-ui-theme='cyber'] #right-context-rail[data-rail-tabs] {
-  --right-rail-panel-width: 312px;
-  width: calc(var(--right-rail-panel-width) + var(--right-rail-tabs-inset));
 }
 
 #right-rail-tabs {
   position: absolute;
   top: 0;
   right: 0;
+  z-index: 120;
   display: flex;
   flex-direction: column;
   gap: 6px;
-  width: var(--right-rail-tabs-width);
+  box-sizing: border-box;
+  width: var(--right-rail-tabs-inset);
   max-height: var(--right-stack-max-height, 70vh);
+  /* Room for the open tab's bridge on the left and its lower fillet below. */
+  padding: 0 0 calc(var(--right-rail-fillet) + 1px) var(--right-rail-tabs-gap);
   overflow: hidden auto;
   scrollbar-width: none;
   pointer-events: auto;
@@ -49,28 +75,24 @@
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  width: 100%;
+  box-sizing: border-box;
+  width: var(--right-rail-tabs-width);
   min-height: 56px;
   padding: 12px 0;
-  border: 1px solid var(--glass-border);
-  border-radius: 9px;
-  background: var(--glass-bg);
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.42),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(24px) saturate(1.4);
-  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  border: 1px solid transparent;
+  border-radius: var(--right-rail-tab-radius);
+  background: transparent;
   color: var(--text-dim);
   font-family: var(--font-mono);
   font-size: 9px;
   line-height: 1;
   letter-spacing: 2.2px;
   text-transform: uppercase;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
   cursor: pointer;
   transition:
     background-color var(--transition-fast),
     border-color var(--transition-fast),
-    box-shadow var(--transition-fast),
     color var(--transition-fast);
 }
 
@@ -81,39 +103,227 @@
   white-space: nowrap;
 }
 
-.right-rail-tab:hover {
-  border-color: var(--glass-border-hover);
+.right-rail-tab:not([aria-selected='true']):hover {
   background: rgba(255, 255, 255, 0.06);
   color: var(--text-primary);
 }
 
+/* The open tab: the panel's surface continued across the bridge, closed by
+   its own top, right and bottom borders. The label stays in the strip's
+   column. */
 .right-rail-tab[aria-selected='true'] {
-  border-color: var(--accent);
-  background: var(--accent-dim);
-  box-shadow: 0 0 12px rgba(0, 212, 255, 0.15);
+  z-index: 1;
+  width: calc(var(--right-rail-tabs-width) + var(--right-rail-tabs-gap));
+  margin-left: calc(-1 * var(--right-rail-tabs-gap));
+  padding-left: var(--right-rail-tabs-gap);
+  border-color: var(--glass-border);
+  border-left: 0;
+  border-radius: 0 var(--right-rail-tab-radius) var(--right-rail-tab-radius) 0;
+  background: var(--glass-bg);
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
   color: var(--accent);
+  text-shadow: none;
+}
+
+/* Concave fillets where the tab's top and bottom edges meet the panel's
+   right edge. Each is a square outside the tab, overlapping the panel's
+   border column by one pixel and the tab's border row by one pixel, painted
+   with the surface beyond a quarter circle and the border along it. */
+.right-rail-tab[aria-selected='true']::before,
+.right-rail-tab[aria-selected='true']::after {
+  content: '';
+  position: absolute;
+  left: -1px;
+  width: calc(var(--right-rail-fillet) + 1px);
+  height: calc(var(--right-rail-fillet) + 1px);
+  pointer-events: none;
+  background:
+    radial-gradient(
+      circle at var(--right-rail-fillet-origin),
+      transparent calc(var(--right-rail-fillet) - 0.25px),
+      var(--glass-border) calc(var(--right-rail-fillet) + 0.25px),
+      var(--glass-border) calc(var(--right-rail-fillet) + 0.75px),
+      transparent calc(var(--right-rail-fillet) + 1.25px)
+    ),
+    radial-gradient(
+      circle at var(--right-rail-fillet-origin),
+      transparent calc(var(--right-rail-fillet) - 0.25px),
+      var(--glass-bg) calc(var(--right-rail-fillet) + 0.25px)
+    );
+}
+
+.right-rail-tab[aria-selected='true']::before {
+  --right-rail-fillet-origin: 100% 0;
+  top: calc(-1 * (var(--right-rail-fillet) + 1px));
+}
+
+.right-rail-tab[aria-selected='true']::after {
+  --right-rail-fillet-origin: 100% 100%;
+  bottom: calc(-1 * (var(--right-rail-fillet) + 1px));
+}
+
+/* The outline around the open panel, notched where the tab joins. */
+body:not(.mobile-shell)
+  #right-context-rail[data-rail-tabs]:has(
+    > [data-panel-id]:not(.collapsed):not([hidden])
+  )::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: var(--right-rail-tabs-inset);
+  z-index: 130;
+  box-sizing: border-box;
+  width: var(--right-rail-panel-width);
+  /* The rail can be taller than its panel in the focus layout. */
+  height: var(--rail-panel-height, 100%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--right-rail-corner);
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    100% var(--right-rail-notch-top),
+    calc(100% - 2px) var(--right-rail-notch-top),
+    calc(100% - 2px) var(--right-rail-notch-bottom),
+    100% var(--right-rail-notch-bottom),
+    100% 100%,
+    0 100%
+  );
+  pointer-events: none;
+}
+
+/* Display is narrower than the rail and sits against the strip. */
+body:not(.mobile-shell)
+  #right-context-rail[data-rail-tabs]:has(
+    > #pp-toggles:not(.collapsed)
+  )::before {
+  width: min(var(--right-rail-panel-width), var(--right-rail-display-width));
+}
+
+/* The first tab starts level with the panel's top edge: the outline's top
+   runs straight into the tab's top border, so no corner and no upper fillet. */
+body:not(.mobile-shell)
+  #right-context-rail[data-rail-tabs]:has(
+    > #right-rail-tabs > .right-rail-tab:first-child[aria-selected='true']
+  )::before {
+  border-top-right-radius: 0;
+}
+
+#right-rail-tabs > .right-rail-tab:first-child[aria-selected='true']::before {
+  content: none;
+}
+
+/* The open panel's card keeps its surface and leaves the outline to the rail.
+   Cyber draws Display's and Context's frames on a ::before. */
+body:not(.mobile-shell)
+  #right-context-rail[data-rail-tabs]
+  > #pp-toggles:not(.collapsed),
+body:not(.mobile-shell)
+  #right-context-rail[data-rail-tabs]
+  > #pp-toggles:not(.collapsed)::before,
+body:not(.mobile-shell)
+  #right-context-rail[data-rail-tabs]
+  > [data-panel-id]:not(.collapsed)
+  > :is(
+    .cctv-panel-inner,
+    .street-level-panel-inner,
+    .weather-panel-inner,
+    .recent-imagery-panel-inner,
+    .global-context-panel-inner,
+    [data-panel-surface]
+  ),
+body:not(.mobile-shell)
+  #right-context-rail[data-rail-tabs]
+  > [data-panel-id]:not(.collapsed)
+  > :is(.global-context-panel-inner, [data-panel-surface])::before {
+  border-color: transparent;
+}
+
+/* The panel reaches at least to its tab's lower fillet and corner. The
+   wrapper carries the floor for the rail's allocated (focus) heights and the
+   card for its natural height. */
+body:not(.mobile-shell)
+  #right-context-rail[data-rail-tabs]
+  > [data-panel-id]:not(.collapsed),
+body:not(.mobile-shell)
+  #right-context-rail[data-rail-tabs]
+  > [data-panel-id]:not(.collapsed)
+  > :is(
+    .cctv-panel-inner,
+    .street-level-panel-inner,
+    .weather-panel-inner,
+    .recent-imagery-panel-inner,
+    .global-context-panel-inner,
+    [data-panel-surface]
+  ) {
+  min-height: var(--right-rail-panel-cover);
 }
 
 /* ── Cyber skin ────────────────────────────────────────────────────────── */
+/* Cyber panels are chamfered frames (--cyber-panel-frame), not rounded
+   cards: square joins, no fillets, and the strip starts below the frame's
+   upper chamfer so the first tab meets a straight edge. */
+:root[data-ui-theme='cyber'] #right-context-rail[data-rail-tabs] {
+  --right-rail-panel-width: 312px;
+  --right-rail-display-width: var(--cyber-right-panel-width);
+  --right-rail-tab-radius: var(--btn-radius);
+  --right-rail-fillet: 0px;
+  --right-rail-corner: 10px;
+  --right-rail-notch-top: max(10px, var(--rail-tab-top, 10px));
+  --right-rail-notch-bottom: min(
+    calc(100% - 10px),
+    var(--rail-tab-bottom, 10px)
+  );
+  width: calc(var(--right-rail-panel-width) + var(--right-rail-tabs-inset));
+}
+
+:root[data-ui-theme='cyber'] #right-rail-tabs {
+  padding-top: 10px;
+}
+
 :root[data-ui-theme='cyber'] .right-rail-tab {
-  border-color: var(--glass-border);
   border-radius: var(--btn-radius);
-  background-color: var(--cyber-panel-surface);
-  background-image: var(--cyber-panel-surface-detail);
-  box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.32) inset,
-    0 8px 20px rgba(0, 0, 0, 0.28);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
+}
+
+:root[data-ui-theme='cyber'] .right-rail-tab:not([aria-selected='true']):hover {
+  background: rgba(226, 235, 236, 0.08);
 }
 
 :root[data-ui-theme='cyber'] .right-rail-tab[aria-selected='true'] {
-  border-color: var(--cyber-red);
-  background-color: var(--cyber-panel-surface);
-  box-shadow:
-    3px 0 0 var(--cyber-red) inset,
-    0 8px 20px rgba(0, 0, 0, 0.28);
+  border-color: var(--glass-border);
+  border-radius: 0 var(--btn-radius) var(--btn-radius) 0;
+  background: var(--cyber-panel-surface);
+  box-shadow: -3px 0 0 var(--cyber-red) inset;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   color: var(--cyber-red-bright);
+}
+
+:root[data-ui-theme='cyber']
+  body:not(.mobile-shell)
+  #right-context-rail[data-rail-tabs]:has(
+    > [data-panel-id]:not(.collapsed):not([hidden])
+  )::before {
+  border-radius: 0;
+  /* --cyber-panel-frame with the tab's notch on its right edge. */
+  clip-path: polygon(
+    0 10px,
+    10px 0,
+    calc(50% - 25px) 0,
+    calc(50% - 18px) 6px,
+    calc(50% + 18px) 6px,
+    calc(50% + 25px) 0,
+    calc(100% - 10px) 0,
+    100% 10px,
+    100% var(--right-rail-notch-top),
+    calc(100% - 2px) var(--right-rail-notch-top),
+    calc(100% - 2px) var(--right-rail-notch-bottom),
+    100% var(--right-rail-notch-bottom),
+    100% calc(100% - 10px),
+    calc(100% - 10px) 100%,
+    10px 100%,
+    0 calc(100% - 10px)
+  );
 }
 
 /* ── Phones keep the sheet shell ───────────────────────────────────────── */

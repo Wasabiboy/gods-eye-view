@@ -322,6 +322,40 @@ test('a sync that changes nothing keeps the same tab elements in place', () => {
   assert.equal(f.doc.activeElement, f.tabFor('cctv-panel'));
 });
 
+test('publishes the open tab and panel extent on the rail for the joined outline', () => {
+  const f = fixture();
+  const props = new Map();
+  f.rail.style = {
+    setProperty: (key, value) => props.set(key, value),
+    removeProperty: (key) => props.delete(key),
+  };
+  const tab = f.tabFor('cctv-panel');
+  tab.offsetTop = 86;
+  tab.offsetHeight = 56;
+  f.cctv.offsetHeight = 300;
+  f.strip.scrollTop = 0;
+  f.cctv.classList.remove('collapsed');
+  f.tabs.sync();
+  assert.deepEqual(
+    [...props],
+    [
+      ['--rail-tab-top', '86px'],
+      ['--rail-tab-bottom', '142px'],
+      ['--rail-panel-height', '300px'],
+    ],
+  );
+  f.strip.scrollTop = 20;
+  f.tabs.sync();
+  assert.equal(
+    props.get('--rail-tab-top'),
+    '66px',
+    'strip scroll is subtracted',
+  );
+  f.cctv.classList.add('collapsed');
+  f.tabs.sync();
+  assert.deepEqual([...props], [], 'no open panel, no join');
+});
+
 test('destroy removes the strip and stops listening', () => {
   const f = fixture();
   const tab = f.tabFor('cctv-panel');

@@ -104,6 +104,7 @@ export function createRightRailTabs({
     const label = documentRef.createElement('span');
     label.className = 'right-rail-tab-label';
     tab.append(label);
+    resizer?.observe(tab);
     entry = { tab, label };
     entries.set(panel.id, entry);
     return entry;
@@ -113,14 +114,44 @@ export function createRightRailTabs({
     documentRef.defaultView?.MutationObserver ?? globalThis.MutationObserver;
   const observer =
     typeof Observer === 'function' ? new Observer(() => sync()) : null;
+  // Tab heights follow their labels (fonts, locale) and panel heights their
+  // content and the rail's allocation, so the join is re-measured whenever
+  // the strip, a tab or a panel changes size or the strip scrolls.
+  const Resize = documentRef.defaultView?.ResizeObserver;
+  const resizer =
+    typeof Resize === 'function' ? new Resize(() => sync()) : null;
+  resizer?.observe(strip);
   const observe = (panel) => {
-    if (!observer || observed.has(panel)) return;
+    if (observed.has(panel)) return;
     observed.add(panel);
-    observer.observe(panel, {
+    resizer?.observe(panel);
+    observer?.observe(panel, {
       attributes: true,
       attributeFilter: ['class', 'hidden'],
     });
   };
+
+  /**
+   * Publish the join on the rail for styles/right-rail-tabs.css: the open
+   * tab's extent (--rail-tab-top, --rail-tab-bottom) and the open panel's
+   * height (--rail-panel-height), in rail pixels. The panel outline is drawn
+   * at that height with a notch at the tab, and the panel reaches down to it.
+   * The rail itself can be taller than its panel in the focus layout.
+   */
+  function placeJoin(tab, panel) {
+    const style = rail.style;
+    if (typeof style?.setProperty !== 'function') return;
+    if (!tab || !Number.isFinite(tab.offsetTop)) {
+      style.removeProperty('--rail-tab-top');
+      style.removeProperty('--rail-tab-bottom');
+      style.removeProperty('--rail-panel-height');
+      return;
+    }
+    const top = tab.offsetTop - (strip.scrollTop || 0);
+    style.setProperty('--rail-tab-top', `${top}px`);
+    style.setProperty('--rail-tab-bottom', `${top + tab.offsetHeight}px`);
+    style.setProperty('--rail-panel-height', `${panel.offsetHeight}px`);
+  }
 
   /** Reconcile tabs with the rail: order, visibility, selection, labels. */
   function sync() {
@@ -136,11 +167,13 @@ export function createRightRailTabs({
     // Move a tab only when it is out of place: reinserting the focused tab
     // would drop keyboard focus on every class change.
     let cursor = strip.firstElementChild;
+    let open = null;
     for (const panel of panels) {
       const { tab, label } = entryFor(panel);
       if (tab !== cursor) strip.insertBefore(tab, cursor);
       else cursor = cursor.nextElementSibling;
       const collapsed = panel.classList.contains('collapsed');
+      if (!collapsed && !open) open = { tab, panel };
       const name = panelTitle(panel);
       if (label.textContent !== name) label.textContent = name;
       tab.setAttribute('aria-selected', String(!collapsed));
@@ -153,9 +186,11 @@ export function createRightRailTabs({
     const live = new Set(panels.map((panel) => panel.id));
     for (const [id, entry] of entries) {
       if (live.has(id)) continue;
+      resizer?.unobserve(entry.tab);
       entry.tab.remove();
       entries.delete(id);
     }
+    placeJoin(open?.tab, open?.panel);
   }
 
   const onClick = (event) => {
@@ -177,8 +212,10 @@ export function createRightRailTabs({
     event.preventDefault();
     visible[next].focus();
   };
+  const onScroll = () => sync();
   strip.addEventListener('click', onClick);
   strip.addEventListener('keydown', onKeydown);
+  strip.addEventListener('scroll', onScroll, { passive: true });
   observer?.observe(rail, { childList: true });
   rail.prepend(strip);
   sync();
@@ -190,10 +227,13 @@ export function createRightRailTabs({
       if (destroyed) return;
       destroyed = true;
       observer?.disconnect();
+      resizer?.disconnect();
       strip.removeEventListener('click', onClick);
       strip.removeEventListener('keydown', onKeydown);
+      strip.removeEventListener('scroll', onScroll);
       strip.remove();
       rail.removeAttribute(RIGHT_RAIL_TABS_ATTRIBUTE);
+      placeJoin(null, null);
       entries.clear();
     },
   };
