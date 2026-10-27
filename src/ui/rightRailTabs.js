@@ -185,7 +185,6 @@ export function createRightRailTabs({
   }
   const strip = documentRef.createElement('div');
   strip.id = RIGHT_RAIL_TABS_ID;
-  strip.className = 'right-rail-tabs';
   strip.setAttribute('role', 'tablist');
   strip.setAttribute('aria-orientation', 'vertical');
   strip.setAttribute('aria-label', t('Panels'));
@@ -228,7 +227,6 @@ export function createRightRailTabs({
     const label = documentRef.createElement('span');
     label.className = 'right-rail-tab-label';
     tab.append(label);
-    resizer?.observe(tab);
     entry = { tab, label };
     entries.set(panel.id, entry);
     return entry;
@@ -239,8 +237,8 @@ export function createRightRailTabs({
   const observer =
     typeof Observer === 'function' ? new Observer(() => sync()) : null;
   // Tab heights follow their labels (fonts, locale) and panel heights their
-  // content and allocation: re-measure the join on any size change and on
-  // strip scroll.
+  // content and allocation: re-measure the join when the strip or a panel
+  // changes size and on strip scroll.
   const Resize = documentRef.defaultView?.ResizeObserver;
   const resizer =
     typeof Resize === 'function' ? new Resize(() => sync()) : null;
@@ -262,28 +260,20 @@ export function createRightRailTabs({
   };
 
   /**
-   * Publish the join: the open tab's extent on the rail (--rail-tab-top and
-   * --rail-tab-bottom, rail pixels; the stylesheet sets the panel's minimum
-   * height from them) and the joined silhouette on the join's layers. The
-   * rail can be taller than its panel in the focus layout, so the join is
-   * sized from the panel, extended down to cover the tab if that is shorter.
+   * Publish the join: the open tab's bottom on the rail (--rail-tab-bottom,
+   * rail pixels; the stylesheet sets the panel's minimum height from it) and
+   * the joined silhouette on the join's layers. The rail can be taller than
+   * its panel in the focus layout, so the join is sized from the panel,
+   * extended down to cover the tab if that is shorter.
    */
   function placeJoin(tab, panel) {
-    const style = rail.style;
-    if (typeof style?.setProperty !== 'function') return;
-    if (!tab || !Number.isFinite(tab.offsetTop)) {
-      style.removeProperty('--rail-tab-top');
-      style.removeProperty('--rail-tab-bottom');
+    if (!tab) {
+      rail.style.removeProperty('--rail-tab-bottom');
       join.hidden = true;
       return;
     }
     const top = tab.offsetTop - (strip.scrollTop || 0);
-    style.setProperty('--rail-tab-top', `${top}px`);
-    style.setProperty('--rail-tab-bottom', `${top + tab.offsetHeight}px`);
-    if (!Number.isFinite(panel?.offsetWidth) || !join.style) {
-      join.hidden = true;
-      return;
-    }
+    rail.style.setProperty('--rail-tab-bottom', `${top + tab.offsetHeight}px`);
     const computed = documentRef.defaultView?.getComputedStyle?.(rail);
     const corner = token(computed, '--right-rail-corner', 16);
     const tabRadius = token(computed, '--right-rail-tab-radius', 10);
@@ -359,7 +349,6 @@ export function createRightRailTabs({
     const live = new Set(panels.map((panel) => panel.id));
     for (const [id, entry] of entries) {
       if (live.has(id)) continue;
-      resizer?.unobserve(entry.tab);
       entry.tab.remove();
       entries.delete(id);
     }

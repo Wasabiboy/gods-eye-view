@@ -15,7 +15,6 @@
    selectors carry it to outrank the Cyber rail rules that follow this sheet. */
 
 #right-context-rail[data-rail-tabs] {
-  --right-rail-panel-width: 330px;
   --right-rail-tabs-width: 34px;
   /* The bridge the open tab reaches across to its panel. */
   --right-rail-tabs-gap: 8px;
@@ -34,7 +33,9 @@
     var(--rail-tab-bottom, 0px) + var(--right-rail-fillet) + 4px +
       var(--right-rail-corner)
   );
-  width: calc(var(--right-rail-panel-width) + var(--right-rail-tabs-inset));
+  /* The theme's rail width stays the panel width; the strip's column is
+     padding beside it. */
+  box-sizing: content-box;
   padding-right: var(--right-rail-tabs-inset);
 }
 
@@ -146,7 +147,6 @@ body.mobile-shell #right-context-rail > .right-rail-join {
   background-image: var(--panel-surface-detail);
   backdrop-filter: blur(24px) saturate(1.4);
   -webkit-backdrop-filter: blur(24px) saturate(1.4);
-  clip-path: var(--rail-join-path, none);
 }
 
 .right-rail-join-outline path {
@@ -219,15 +219,13 @@ body:not(.mobile-shell)
 /* Cyber panels are chamfered frames (--cyber-panel-frame), not rounded
    cards: square joins, no fillets, no blur, and the strip starts below the
    frame's upper chamfer so the first tab meets a straight edge. The frame's
-   red edge bar and faint right highlight move onto the join's glass. */
+   red edge bar moves onto the join's glass. */
 :root[data-ui-theme='cyber'] #right-context-rail[data-rail-tabs] {
-  --right-rail-panel-width: 312px;
   --right-rail-tab-radius: 0px;
   --right-rail-fillet: 0px;
   --right-rail-corner: 10px;
   --right-rail-join-style: chamfer;
   --right-rail-join-shadow: 0 10px 28px rgba(0, 0, 0, 0.42);
-  width: calc(var(--right-rail-panel-width) + var(--right-rail-tabs-inset));
 }
 
 :root[data-ui-theme='cyber'] #right-rail-tabs {
@@ -236,10 +234,6 @@ body:not(.mobile-shell)
 
 /* Cyber's generic hover/selected button treatment (cyber.css) would paint
    the tabs; the open tab stays a label on the shared surface. */
-:root[data-ui-theme='cyber'] .right-rail-tab {
-  border-radius: var(--btn-radius);
-}
-
 :root[data-ui-theme='cyber'] .right-rail-tab:not([aria-selected='true']):hover {
   background-color: rgba(226, 235, 236, 0.08);
   box-shadow: none;
@@ -247,7 +241,6 @@ body:not(.mobile-shell)
 
 :root[data-ui-theme='cyber'] .right-rail-tab[aria-selected='true'],
 :root[data-ui-theme='cyber'] .right-rail-tab[aria-selected='true']:hover {
-  border-radius: 0;
   background-color: transparent;
   box-shadow: -3px 0 0 var(--cyber-red) inset;
   color: var(--cyber-red-bright);
@@ -265,9 +258,7 @@ body:not(.mobile-shell)
 }
 
 :root[data-ui-theme='cyber'] .right-rail-join-glass {
-  box-shadow:
-    3px 0 0 rgba(196, 84, 84, 0.2) inset,
-    -1px 0 0 rgba(226, 235, 236, 0.05) inset;
+  box-shadow: 3px 0 0 rgba(196, 84, 84, 0.2) inset;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }

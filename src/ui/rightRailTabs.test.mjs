@@ -24,12 +24,18 @@ function makeDocument() {
     const el = new EventTarget();
     const attrs = new Map();
     const classes = new Set();
+    const props = new Map();
     Object.assign(el, {
       tagName: tag.toUpperCase(),
       ownerDocument: doc,
       children: [],
       parentElement: null,
       dataset: {},
+      style: {
+        props,
+        setProperty: (key, value) => props.set(key, value),
+        removeProperty: (key) => props.delete(key),
+      },
       hidden: false,
       textContent: '',
       tabIndex: -1,
@@ -325,11 +331,7 @@ test('a sync that changes nothing keeps the same tab elements in place', () => {
 
 test('publishes the open tab extent on the rail and keeps a join element under the panels', () => {
   const f = fixture();
-  const props = new Map();
-  f.rail.style = {
-    setProperty: (key, value) => props.set(key, value),
-    removeProperty: (key) => props.delete(key),
-  };
+  const { props } = f.rail.style;
   assert.equal(f.tabs.join.parentElement, f.rail);
   assert.equal(f.tabs.join.getAttribute('aria-hidden'), 'true');
   assert.equal(f.tabs.join.hidden, true, 'nothing open, nothing to join');
@@ -342,28 +344,39 @@ test('publishes the open tab extent on the rail and keeps a join element under t
     ],
   );
   const tab = f.tabFor('cctv-panel');
-  tab.offsetTop = 86;
-  tab.offsetHeight = 56;
+  Object.assign(tab, {
+    offsetTop: 86,
+    offsetLeft: 0,
+    offsetHeight: 56,
+    offsetWidth: 42,
+  });
+  Object.assign(f.cctv, {
+    offsetTop: 0,
+    offsetLeft: 0,
+    offsetHeight: 300,
+    offsetWidth: 330,
+  });
   f.strip.scrollTop = 0;
   f.cctv.classList.remove('collapsed');
   f.tabs.sync();
-  assert.deepEqual(
-    [...props],
-    [
-      ['--rail-tab-top', '86px'],
-      ['--rail-tab-bottom', '142px'],
-    ],
+  assert.deepEqual([...props], [['--rail-tab-bottom', '142px']]);
+  assert.equal(f.tabs.join.hidden, false);
+  const [, glass] = f.tabs.join.children;
+  assert.match(
+    glass.style.clipPath,
+    /^path\('M 16 0 L 314 0 A 16 16 0 0 1 330 16 L 330 78 /,
   );
   f.strip.scrollTop = 20;
   f.tabs.sync();
   assert.equal(
-    props.get('--rail-tab-top'),
-    '66px',
+    props.get('--rail-tab-bottom'),
+    '122px',
     'strip scroll is subtracted',
   );
   f.cctv.classList.add('collapsed');
   f.tabs.sync();
   assert.deepEqual([...props], [], 'no open panel, no join');
+  assert.equal(f.tabs.join.hidden, true);
   f.tabs.destroy();
   assert.equal(f.tabs.join.parentElement, null);
 });

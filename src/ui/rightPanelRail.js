@@ -1,8 +1,5 @@
 import { allocatePanelStackHeights } from '../panelStackLayout.js';
-import {
-  resolveHudRailLayout,
-  shouldHideCollapsedRightPanels,
-} from './panelRailGeometry.js';
+import { resolveHudRailLayout } from './panelRailGeometry.js';
 
 import { displayPanelScroller } from './displayPanelScroll.js';
 
@@ -38,7 +35,6 @@ function settledLeftRailTop(leftStack, viewportHeight, getComputedStyle) {
  * @param {HTMLElement} options.stack Rail element.
  * @param {Iterable<HTMLElement>} options.obstacles Caller-selected obstacle nodes.
  * @param {Window} options.windowRef Viewport and style reader.
- * @param {{visible: boolean, variant: string}} options.hud Current HUD presentation.
  * @param {string} options.preferredPanelId Most recently opened panel.
  * @param {Function} options.onCollapse Update a panel's disclosure chrome.
  * @param {Function} [options.getComputedStyle] Optional DOM style reader override.
@@ -51,7 +47,6 @@ export function layoutRightPanelRail({
   stack,
   obstacles,
   windowRef,
-  hud,
   preferredPanelId,
   onCollapse,
   leftStack,
@@ -104,19 +99,10 @@ export function layoutRightPanelRail({
       onCollapse(panel);
     }
   }
-  const hasExpandedPanel = panels.some(
-    (panel) =>
-      !panel.classList.contains('collapsed') &&
-      (!isMobile || panel.id !== 'pp-toggles'),
-  );
-  // Phones present the rail as tab sheets (mobileShell.js), which choose what
-  // shows; hiding collapsed siblings would empty a sheet and its a11y tree.
-  const exclusive =
-    !isMobile &&
-    shouldHideCollapsedRightPanels({
-      hudVariant: hud.variant,
-      hasExpandedPanel,
-    });
+  // The tab strip is the launcher, so collapsed panels hide. Phones present
+  // the rail as tab sheets (mobileShell.js), which choose what shows; hiding
+  // collapsed siblings would empty a sheet and its a11y tree.
+  const exclusive = !isMobile;
   stack.classList.toggle('layout-exclusive', exclusive);
   for (const panel of panels) {
     if (exclusive && panel.classList.contains('collapsed'))

@@ -1511,17 +1511,11 @@ the rail and the strip with it.
 
 The open tab and its panel are one surface, like a folder tab; the other tabs
 are borderless labels. The strip measures the open panel and tab, traces their
-joined silhouette as an SVG path (`railJoinPath`: rounded corners, concave
-fillets at the junction; Cyber's chamfered frame with its calibration bay and a
-square tab) and keeps a join element under the panels: one layer blurs and
-tints the backdrop inside the path, one SVG strokes the outline and another
-casts the drop shadow, so the junction has no seam or second blur region. The
-open panel's wrapper and card and the tab draw no surface of their own. The
-join is re-measured through a ResizeObserver and on strip scroll;
-`--rail-tab-bottom` on the rail sets the open panel's minimum height, so a
-short panel such as Context still reaches its tab. A first tab level with the
-panel's top shares its top edge; Cyber's strip starts below the frame's upper
-chamfer.
+joined silhouette as an SVG path (`railJoinPath`; Cyber gets its chamfered
+frame) and shapes a join element under the panels with it: glass, outline and
+shadow in one piece, so the junction has no seam. The panel and the tab draw
+no surface of their own. `--rail-tab-bottom` on the rail sets the open panel's
+minimum height, so a short panel such as Context still reaches its tab.
 
 A first-time visitor on a desktop viewport finds Display open
 (`src/ui/panelPositionControls.js`): with every panel closed nothing shows that

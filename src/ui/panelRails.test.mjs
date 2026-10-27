@@ -306,18 +306,6 @@ test('right layout lets a stored or shared choice outrank a panel open only by d
   f.run();
   assert.equal(f.first.classList.contains('rail-owner-collapsed'), true);
   assert.equal(f.second.classList.contains('collapsed'), false);
-  const g = fixture('right');
-  g.expand(g.first, 900);
-  g.expand(g.second, 900);
-  g.first.dataset.collapsedPreference = 'default';
-  g.second.dataset.collapsedPreference = 'default';
-  g.run();
-  assert.equal(
-    g.first.classList.contains('collapsed'),
-    false,
-    'all default: first wins',
-  );
-  assert.equal(g.second.classList.contains('rail-owner-collapsed'), true);
 });
 
 for (const collapsed of [true, false]) {

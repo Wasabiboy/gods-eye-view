@@ -2,35 +2,13 @@ import { readStylesheet } from './testSupport/readStylesheet.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import {
-  shouldExpandGlobalContextPanel,
-  shouldHideCollapsedRightPanels,
-} from './rightRailPolicy.js';
+import { shouldExpandGlobalContextPanel } from './rightRailPolicy.js';
 
-test('the tab strip is the launcher in every HUD layout, so collapsed right-rail panels hide', () => {
-  for (const hudVariant of ['tactical', 'operator', 'minimal', 'cyber', 'full']) {
-    for (const hasExpandedPanel of [true, false]) {
-      assert.equal(
-        shouldHideCollapsedRightPanels({ hudVariant, hasExpandedPanel }),
-        true,
-        `${hudVariant} with${hasExpandedPanel ? '' : 'out'} an expanded panel`,
-      );
-    }
-  }
-});
-
-test('desktop Display participates in Tactical exclusivity without changing mobile Display behavior', () => {
+test('the desktop right rail hides collapsed panels behind the tab strip and marks them aria-hidden', () => {
   const ui = readFileSync(new URL('./ui/rightPanelRail.js', import.meta.url), 'utf8');
   const css = readStylesheet(new URL('../style.css', import.meta.url));
   assert.match(ui, /const isMobile = windowRef\.matchMedia\('\(max-width: 720px\)'\)\.matches/);
-  assert.match(
-    ui,
-    /!panel\.classList\.contains\('collapsed'\)\s*&&\s*\(!isMobile \|\| panel\.id !== 'pp-toggles'\)/,
-  );
-  assert.doesNotMatch(
-    ui,
-    /panel\.id !== 'pp-toggles' && !panel\.classList\.contains\('collapsed'\)/,
-  );
+  assert.match(ui, /const exclusive = !isMobile;/);
   assert.match(ui, /if \(exclusive && panel\.classList\.contains\('collapsed'\)\)\s*panel\.setAttribute\('aria-hidden', 'true'\)/);
   assert.match(css, /#right-context-rail\.layout-exclusive > \[data-panel-id\]\.collapsed \{/);
 });

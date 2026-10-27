@@ -301,7 +301,6 @@ export class PanelLayoutController {
       stack: this._rightPanelStack,
       obstacles: document.querySelectorAll(RIGHT_STACK_OBSTACLE_SELECTOR),
       windowRef: window,
-      hud: this.readHud(),
       preferredPanelId: this._rightStackPreferredPanelId,
       onCollapse: (panel) => this._syncPanelCollapseButton(panel),
       leftStack: this._leftPanelStack,

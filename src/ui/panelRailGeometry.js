@@ -60,15 +60,3 @@ export function resolveHudRailLayout({
     constrained: panelHeight > availableHeight,
   };
 }
-
-/**
- * The tab strip (rightRailTabs.js) is the launcher in every HUD layout, so
- * collapsed right-rail panels always hide. Callers still pass the rail state
- * they lay out.
- * @param {{hudVariant?: string, hasExpandedPanel?: boolean}} [input]
- * @returns {boolean}
- */
-export function shouldHideCollapsedRightPanels(input = {}) {
-  void input;
-  return true;
-}

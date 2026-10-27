@@ -68,7 +68,7 @@ export function collapsePanelOnEscape(
   );
   const escapedFromDisclosure =
     event.target === disclosure || disclosure?.contains?.(event.target);
-  if (tab) tab.focus?.({ preventScroll: true });
+  if (tab) tab.focus({ preventScroll: true });
   else if (escapedFromDisclosure) disclosure?.blur?.();
   else disclosure?.focus?.({ preventScroll: true });
   return true;
