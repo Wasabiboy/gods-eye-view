@@ -4,40 +4,35 @@
    exclusive layout (rightPanelRail.js) hides the collapsed ones, so the strip
    is the only launcher. Phones keep the sheet shell (mobile-shell.css).
 
-   The open tab and its panel read as one shape with one surface and one
-   outline. The panel card keeps its glass surface but draws no border of its
-   own; the rail's ::before draws the outline around the card with a notch
-   where the tab joins, the open tab closes the shape with its own top, right
-   and bottom borders, and two concave fillets (the tab's ::before/::after)
-   round the inner corners. The strip publishes the join on the rail
-   (rightRailTabs.js): --rail-tab-top/--rail-tab-bottom place the notch and
-   set the panel's minimum height, so a short panel still reaches its tab,
-   and --rail-panel-height sizes the outline, since the rail itself can be
-   taller than its panel. The other tabs are borderless labels. `data-rail-tabs` arrives on the
-   rail with the strip, so a rail without it keeps its legacy geometry; the
-   selectors carry it so they outrank the Cyber rail rules that follow this
-   sheet.                                                                    */
+   The open tab and its panel are one surface. The strip builds a join
+   element (.right-rail-join) under the panels from the measured geometry:
+   one path traces the silhouette of the panel with the tab attached to its
+   right edge (rounded corners, concave fillets at the junction; Cyber's
+   chamfered frame instead). The glass layer blurs and tints the backdrop
+   inside that path, an SVG strokes the outline along it and another SVG
+   casts the drop shadow, so there is no seam, no doubled edge and no second
+   blur region where the tab meets the panel. The open panel's card and the
+   tab draw no surface of their own; the other tabs are borderless labels.
+   The strip also publishes --rail-tab-bottom on the rail so a short panel
+   grows down to its tab. `data-rail-tabs` arrives on the rail with the
+   strip, so a rail without it keeps its legacy geometry; the selectors carry
+   it so they outrank the Cyber rail rules that follow this sheet.          */
 
 #right-context-rail[data-rail-tabs] {
   --right-rail-panel-width: 330px;
-  --right-rail-display-width: var(--display-panel-expanded-width);
   --right-rail-tabs-width: 34px;
   /* The bridge the open tab reaches across to its panel. */
   --right-rail-tabs-gap: 8px;
   --right-rail-tabs-inset: calc(
     var(--right-rail-tabs-width) + var(--right-rail-tabs-gap)
   );
+  /* Join geometry, read by rightRailTabs.js: panel corner, the tab's outer
+     corners, the concave fillets, and round corners or Cyber's chamfers. */
+  --right-rail-corner: var(--panel-radius);
   --right-rail-tab-radius: 10px;
   --right-rail-fillet: 8px;
-  --right-rail-corner: var(--panel-radius);
-  --right-rail-notch-top: max(
-    0px,
-    calc(var(--rail-tab-top, 0px) - var(--right-rail-fillet))
-  );
-  --right-rail-notch-bottom: min(
-    100%,
-    calc(var(--rail-tab-bottom, 0px) + var(--right-rail-fillet))
-  );
+  --right-rail-join-style: round;
+  --right-rail-join-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   /* Lower fillet, a short straight run, then the panel's corner. */
   --right-rail-panel-cover: calc(
     var(--rail-tab-bottom, 0px) + var(--right-rail-fillet) + 4px +
@@ -58,8 +53,8 @@
   box-sizing: border-box;
   width: var(--right-rail-tabs-inset);
   max-height: var(--right-stack-max-height, 70vh);
-  /* Room for the open tab's bridge on the left and its lower fillet below. */
-  padding: 0 0 calc(var(--right-rail-fillet) + 1px) var(--right-rail-tabs-gap);
+  /* Room for the open tab's bridge on the left. */
+  padding-left: var(--right-rail-tabs-gap);
   overflow: hidden auto;
   scrollbar-width: none;
   pointer-events: auto;
@@ -79,7 +74,7 @@
   width: var(--right-rail-tabs-width);
   min-height: 56px;
   padding: 12px 0;
-  border: 1px solid transparent;
+  border: 0;
   border-radius: var(--right-rail-tab-radius);
   background: transparent;
   color: var(--text-dim);
@@ -92,7 +87,6 @@
   cursor: pointer;
   transition:
     background-color var(--transition-fast),
-    border-color var(--transition-fast),
     color var(--transition-fast);
 }
 
@@ -108,113 +102,66 @@
   color: var(--text-primary);
 }
 
-/* The open tab: the panel's surface continued across the bridge, closed by
-   its own top, right and bottom borders. The label stays in the strip's
-   column. */
+/* The open tab is the label and hit area over the join's surface; it spans
+   the bridge too, with the label kept in the strip's column. */
 .right-rail-tab[aria-selected='true'] {
-  z-index: 1;
   width: calc(var(--right-rail-tabs-width) + var(--right-rail-tabs-gap));
   margin-left: calc(-1 * var(--right-rail-tabs-gap));
   padding-left: var(--right-rail-tabs-gap);
-  border-color: var(--glass-border);
-  border-left: 0;
   border-radius: 0 var(--right-rail-tab-radius) var(--right-rail-tab-radius) 0;
-  background: var(--glass-bg);
-  backdrop-filter: blur(24px) saturate(1.4);
-  -webkit-backdrop-filter: blur(24px) saturate(1.4);
   color: var(--accent);
   text-shadow: none;
 }
 
-/* Concave fillets where the tab's top and bottom edges meet the panel's
-   right edge. Each is a square outside the tab, overlapping the panel's
-   border column by one pixel and the tab's border row by one pixel, painted
-   with the surface beyond a quarter circle and the border along it. */
-.right-rail-tab[aria-selected='true']::before,
-.right-rail-tab[aria-selected='true']::after {
-  content: '';
-  position: absolute;
-  left: -1px;
-  width: calc(var(--right-rail-fillet) + 1px);
-  height: calc(var(--right-rail-fillet) + 1px);
-  pointer-events: none;
-  background:
-    radial-gradient(
-      circle at var(--right-rail-fillet-origin),
-      transparent calc(var(--right-rail-fillet) - 0.25px),
-      var(--glass-border) calc(var(--right-rail-fillet) + 0.25px),
-      var(--glass-border) calc(var(--right-rail-fillet) + 0.75px),
-      transparent calc(var(--right-rail-fillet) + 1.25px)
-    ),
-    radial-gradient(
-      circle at var(--right-rail-fillet-origin),
-      transparent calc(var(--right-rail-fillet) - 0.25px),
-      var(--glass-bg) calc(var(--right-rail-fillet) + 0.25px)
-    );
-}
-
-.right-rail-tab[aria-selected='true']::before {
-  --right-rail-fillet-origin: 100% 0;
-  top: calc(-1 * (var(--right-rail-fillet) + 1px));
-}
-
-.right-rail-tab[aria-selected='true']::after {
-  --right-rail-fillet-origin: 100% 100%;
-  bottom: calc(-1 * (var(--right-rail-fillet) + 1px));
-}
-
-/* The outline around the open panel, notched where the tab joins. */
-body:not(.mobile-shell)
-  #right-context-rail[data-rail-tabs]:has(
-    > [data-panel-id]:not(.collapsed):not([hidden])
-  )::before {
-  content: '';
+/* ── The join: surface, outline and shadow of panel plus tab ──────────── */
+.right-rail-join {
   position: absolute;
   top: 0;
-  right: var(--right-rail-tabs-inset);
-  z-index: 130;
-  box-sizing: border-box;
-  width: var(--right-rail-panel-width);
-  /* The rail can be taller than its panel in the focus layout. */
-  height: var(--rail-panel-height, 100%);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--right-rail-corner);
-  clip-path: polygon(
-    0 0,
-    100% 0,
-    100% var(--right-rail-notch-top),
-    calc(100% - 2px) var(--right-rail-notch-top),
-    calc(100% - 2px) var(--right-rail-notch-bottom),
-    100% var(--right-rail-notch-bottom),
-    100% 100%,
-    0 100%
-  );
+  left: 0;
+  z-index: -1;
+  width: 100%;
   pointer-events: none;
 }
 
-/* Display is narrower than the rail and sits against the strip. */
-body:not(.mobile-shell)
-  #right-context-rail[data-rail-tabs]:has(
-    > #pp-toggles:not(.collapsed)
-  )::before {
-  width: min(var(--right-rail-panel-width), var(--right-rail-display-width));
+.right-rail-join[hidden],
+body.mobile-shell #right-context-rail > .right-rail-join {
+  display: none;
 }
 
-/* The first tab starts level with the panel's top edge: the outline's top
-   runs straight into the tab's top border, so no corner and no upper fillet. */
-body:not(.mobile-shell)
-  #right-context-rail[data-rail-tabs]:has(
-    > #right-rail-tabs > .right-rail-tab:first-child[aria-selected='true']
-  )::before {
-  border-top-right-radius: 0;
+.right-rail-join > * {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
 }
 
-#right-rail-tabs > .right-rail-tab:first-child[aria-selected='true']::before {
-  content: none;
+/* A black silhouette casts the shadow; its clip keeps only the outside. */
+.right-rail-join-shadow {
+  filter: drop-shadow(var(--right-rail-join-shadow));
 }
 
-/* The open panel's card keeps its surface and leaves the outline to the rail.
-   Cyber draws Display's and Context's frames on a ::before. */
+.right-rail-join-shadow path {
+  fill: #000;
+}
+
+.right-rail-join-glass {
+  background-color: var(--glass-bg);
+  background-image: var(--panel-surface-detail);
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  clip-path: var(--rail-join-path, none);
+}
+
+.right-rail-join-outline path {
+  fill: none;
+  stroke: var(--glass-border);
+  stroke-width: 1;
+}
+
+/* The open panel's card leaves surface, outline and shadow to the join.
+   Cyber draws Display's and Context's frames, and the surface contract its
+   card, on a ::before. */
 body:not(.mobile-shell)
   #right-context-rail[data-rail-tabs]
   > #pp-toggles:not(.collapsed),
@@ -237,6 +184,18 @@ body:not(.mobile-shell)
   > [data-panel-id]:not(.collapsed)
   > :is(.global-context-panel-inner, [data-panel-surface])::before {
   border-color: transparent;
+  background: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* The card's glow used to sit under its own surface; keep it as faint. */
+body:not(.mobile-shell)
+  #right-context-rail[data-rail-tabs]
+  > [data-panel-id]:not(.collapsed)
+  > .panel-glow {
+  opacity: 0.08;
 }
 
 /* The panel reaches at least to its tab's lower fillet and corner. The
@@ -261,19 +220,16 @@ body:not(.mobile-shell)
 
 /* ── Cyber skin ────────────────────────────────────────────────────────── */
 /* Cyber panels are chamfered frames (--cyber-panel-frame), not rounded
-   cards: square joins, no fillets, and the strip starts below the frame's
-   upper chamfer so the first tab meets a straight edge. */
+   cards: square joins, no fillets, no blur, and the strip starts below the
+   frame's upper chamfer so the first tab meets a straight edge. The frame's
+   red edge bar and faint right highlight move onto the join's glass. */
 :root[data-ui-theme='cyber'] #right-context-rail[data-rail-tabs] {
   --right-rail-panel-width: 312px;
-  --right-rail-display-width: var(--cyber-right-panel-width);
-  --right-rail-tab-radius: var(--btn-radius);
+  --right-rail-tab-radius: 0px;
   --right-rail-fillet: 0px;
   --right-rail-corner: 10px;
-  --right-rail-notch-top: max(10px, var(--rail-tab-top, 10px));
-  --right-rail-notch-bottom: min(
-    calc(100% - 10px),
-    var(--rail-tab-bottom, 10px)
-  );
+  --right-rail-join-style: chamfer;
+  --right-rail-join-shadow: 0 10px 28px rgba(0, 0, 0, 0.42);
   width: calc(var(--right-rail-panel-width) + var(--right-rail-tabs-inset));
 }
 
@@ -281,49 +237,31 @@ body:not(.mobile-shell)
   padding-top: 10px;
 }
 
+/* Cyber's generic hover/selected button treatment (cyber.css) would paint
+   the tabs; the open tab stays a label on the shared surface. */
 :root[data-ui-theme='cyber'] .right-rail-tab {
   border-radius: var(--btn-radius);
 }
 
 :root[data-ui-theme='cyber'] .right-rail-tab:not([aria-selected='true']):hover {
-  background: rgba(226, 235, 236, 0.08);
+  background-color: rgba(226, 235, 236, 0.08);
+  box-shadow: none;
 }
 
-:root[data-ui-theme='cyber'] .right-rail-tab[aria-selected='true'] {
-  border-color: var(--glass-border);
-  border-radius: 0 var(--btn-radius) var(--btn-radius) 0;
-  background: var(--cyber-panel-surface);
+:root[data-ui-theme='cyber'] .right-rail-tab[aria-selected='true'],
+:root[data-ui-theme='cyber'] .right-rail-tab[aria-selected='true']:hover {
+  border-radius: 0;
+  background-color: transparent;
   box-shadow: -3px 0 0 var(--cyber-red) inset;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
   color: var(--cyber-red-bright);
 }
 
-:root[data-ui-theme='cyber']
-  body:not(.mobile-shell)
-  #right-context-rail[data-rail-tabs]:has(
-    > [data-panel-id]:not(.collapsed):not([hidden])
-  )::before {
-  border-radius: 0;
-  /* --cyber-panel-frame with the tab's notch on its right edge. */
-  clip-path: polygon(
-    0 10px,
-    10px 0,
-    calc(50% - 25px) 0,
-    calc(50% - 18px) 6px,
-    calc(50% + 18px) 6px,
-    calc(50% + 25px) 0,
-    calc(100% - 10px) 0,
-    100% 10px,
-    100% var(--right-rail-notch-top),
-    calc(100% - 2px) var(--right-rail-notch-top),
-    calc(100% - 2px) var(--right-rail-notch-bottom),
-    100% var(--right-rail-notch-bottom),
-    100% calc(100% - 10px),
-    calc(100% - 10px) 100%,
-    10px 100%,
-    0 calc(100% - 10px)
-  );
+:root[data-ui-theme='cyber'] .right-rail-join-glass {
+  box-shadow:
+    3px 0 0 rgba(196, 84, 84, 0.2) inset,
+    -1px 0 0 rgba(226, 235, 236, 0.05) inset;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 /* ── Phones keep the sheet shell ───────────────────────────────────────── */

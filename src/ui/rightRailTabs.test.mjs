@@ -5,6 +5,7 @@ import {
   RIGHT_RAIL_TABS_ID,
   createRightRailTabs,
   nextRailTabIndex,
+  railJoinPath,
   railTabPanels,
 } from './rightRailTabs.js';
 
@@ -322,17 +323,27 @@ test('a sync that changes nothing keeps the same tab elements in place', () => {
   assert.equal(f.doc.activeElement, f.tabFor('cctv-panel'));
 });
 
-test('publishes the open tab and panel extent on the rail for the joined outline', () => {
+test('publishes the open tab extent on the rail and keeps a join element under the panels', () => {
   const f = fixture();
   const props = new Map();
   f.rail.style = {
     setProperty: (key, value) => props.set(key, value),
     removeProperty: (key) => props.delete(key),
   };
+  assert.equal(f.tabs.join.parentElement, f.rail);
+  assert.equal(f.tabs.join.getAttribute('aria-hidden'), 'true');
+  assert.equal(f.tabs.join.hidden, true, 'nothing open, nothing to join');
+  assert.deepEqual(
+    f.tabs.join.children.map((layer) => layer.getAttribute('class')),
+    [
+      'right-rail-join-shadow',
+      'right-rail-join-glass',
+      'right-rail-join-outline',
+    ],
+  );
   const tab = f.tabFor('cctv-panel');
   tab.offsetTop = 86;
   tab.offsetHeight = 56;
-  f.cctv.offsetHeight = 300;
   f.strip.scrollTop = 0;
   f.cctv.classList.remove('collapsed');
   f.tabs.sync();
@@ -341,7 +352,6 @@ test('publishes the open tab and panel extent on the rail for the joined outline
     [
       ['--rail-tab-top', '86px'],
       ['--rail-tab-bottom', '142px'],
-      ['--rail-panel-height', '300px'],
     ],
   );
   f.strip.scrollTop = 20;
@@ -354,6 +364,52 @@ test('publishes the open tab and panel extent on the rail for the joined outline
   f.cctv.classList.add('collapsed');
   f.tabs.sync();
   assert.deepEqual([...props], [], 'no open panel, no join');
+  f.tabs.destroy();
+  assert.equal(f.tabs.join.parentElement, null);
+});
+
+test('railJoinPath traces the panel with the tab attached: corners, fillets, tab corners', () => {
+  const geometry = {
+    panel: { x0: 0, y0: 0, x1: 330, y1: 378 },
+    tab: { top: 85, bottom: 141, right: 372 },
+    corner: 16,
+    tabRadius: 10,
+    fillet: 8,
+  };
+  assert.equal(
+    railJoinPath(geometry),
+    'M 16 0 L 314 0 A 16 16 0 0 1 330 16 L 330 77 A 8 8 0 0 0 338 85 ' +
+      'L 362 85 A 10 10 0 0 1 372 95 L 372 131 A 10 10 0 0 1 362 141 ' +
+      'L 338 141 A 8 8 0 0 0 330 149 L 330 362 A 16 16 0 0 1 314 378 ' +
+      'L 16 378 A 16 16 0 0 1 0 362 L 0 16 A 16 16 0 0 1 16 0 Z',
+  );
+  assert.equal(
+    railJoinPath({ ...geometry, tab: { top: 0, bottom: 79, right: 372 } }),
+    'M 16 0 L 362 0 A 10 10 0 0 1 372 10 L 372 69 A 10 10 0 0 1 362 79 ' +
+      'L 338 79 A 8 8 0 0 0 330 87 L 330 362 A 16 16 0 0 1 314 378 ' +
+      'L 16 378 A 16 16 0 0 1 0 362 L 0 16 A 16 16 0 0 1 16 0 Z',
+    'a tab level with the top shares the top edge: no corner, no upper fillet',
+  );
+  const stroke = railJoinPath({ ...geometry, inset: 0.5 });
+  assert.match(stroke, /^M 16 0\.5 L 314 0\.5 A 15\.5 15\.5 0 0 1 329\.5 16 /);
+  assert.match(
+    stroke,
+    / L 329\.5 77 A 8\.5 8\.5 0 0 0 338 85\.5 /,
+    'an inset grows the concave fillets and shrinks the convex corners',
+  );
+  const chamfer = railJoinPath({
+    ...geometry,
+    panel: { x0: 0, y0: 0, x1: 312, y1: 374 },
+    corner: 10,
+    style: 'chamfer',
+  });
+  assert.equal(
+    chamfer,
+    'M 0 10 L 10 0 L 131 0 L 138 6 L 174 6 L 181 0 L 302 0 L 312 10 ' +
+      'L 312 85 L 372 85 L 372 141 L 312 141 L 312 364 L 302 374 ' +
+      'L 10 374 L 0 364 Z',
+    'Cyber: chamfers, the calibration bay and a square tab',
+  );
 });
 
 test('destroy removes the strip and stops listening', () => {

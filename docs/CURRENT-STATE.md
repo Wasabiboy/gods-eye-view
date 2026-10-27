@@ -1509,20 +1509,20 @@ the panels' own translated header titles. The strip marks the rail with
 rail without the strip keeps its legacy geometry. Phones hide the strip and
 keep the sheet shell; Cockpit hides the rail and the strip with it.
 
-The open tab and its panel read as one shape, like a folder tab: they share
-the glass surface and one outline, and the other tabs are borderless labels.
-The panel card keeps its surface but draws no border; the rail's `::before`
-draws the outline around the card with a notch where the tab joins, the open
-tab closes the shape with its own top, right and bottom borders, and two
-concave fillets round the inner corners (Cyber's chamfered frames join
-square, and its strip starts below the frame's upper chamfer). The strip
-publishes the join on the rail as inline custom properties, re-measured
-through a ResizeObserver and on strip scroll: `--rail-tab-top` and
-`--rail-tab-bottom` place the notch and set the open panel's minimum height,
-so a short panel such as Context still reaches its tab, and
-`--rail-panel-height` sizes the outline, since the rail is taller than its
-panel in the focus layout. The first tab starts level with the panel's top
-edge, so the outline's top runs straight into it with no corner.
+The open tab and its panel are one surface, like a folder tab, and the other
+tabs are borderless labels. The strip measures the open panel and tab,
+traces their joined silhouette as an SVG path (`railJoinPath`: rounded panel
+corners, the tab's outer corners, concave fillets where the tab meets the
+panel's edge; Cyber's chamfered frame with its calibration bay and a square
+tab instead) and keeps a join element under the panels: one layer blurs and
+tints the backdrop inside the path, an SVG strokes the outline along it and
+another SVG casts the drop shadow, so the junction has no seam, doubled edge
+or second blur region. The open panel's card and the tab draw no surface,
+border, shadow or blur of their own. The join is re-measured through a
+ResizeObserver and on strip scroll; `--rail-tab-bottom` on the rail sets the
+open panel's minimum height, so a short panel such as Context still reaches
+its tab. A first tab level with the panel's top shares its top edge, with no
+corner between them; Cyber's strip starts below the frame's upper chamfer.
 
 ## Phone layout
 
