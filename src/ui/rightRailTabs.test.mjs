@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
-  DEFAULT_RIGHT_RAIL_TAB_VARIANT,
+  RIGHT_RAIL_TABS_ATTRIBUTE,
   RIGHT_RAIL_TABS_ID,
   createRightRailTabs,
   nextRailTabIndex,
@@ -196,7 +196,7 @@ test('builds one tab per visible rail panel, in rail order, labelled from the pa
   assert.equal(f.strip.id, RIGHT_RAIL_TABS_ID);
   assert.equal(f.strip.getAttribute('role'), 'tablist');
   assert.equal(f.strip.getAttribute('aria-orientation'), 'vertical');
-  assert.equal(f.rail.dataset.railTabs, DEFAULT_RIGHT_RAIL_TAB_VARIANT);
+  assert.equal(f.rail.getAttribute(RIGHT_RAIL_TABS_ATTRIBUTE), 'vertical');
   assert.deepEqual(
     f.strip.children.map((tab) => [
       tab.dataset.railTab,
@@ -328,6 +328,7 @@ test('destroy removes the strip and stops listening', () => {
   f.tabs.destroy();
   assert.equal(f.strip.parentElement, null);
   assert.equal(f.rail.children.includes(f.strip), false);
+  assert.equal(f.rail.getAttribute(RIGHT_RAIL_TABS_ATTRIBUTE), null);
   fire(tab, 'click');
   assert.deepEqual(f.calls, []);
   f.tabs.destroy();

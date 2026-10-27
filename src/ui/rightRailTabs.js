@@ -12,25 +12,12 @@ import { msg, t } from '../i18n/index.js';
 
 export const RIGHT_RAIL_TABS_ID = 'right-rail-tabs';
 
-/** Presentation variants, selected through `data-rail-tabs` on the rail. */
-export const RIGHT_RAIL_TAB_VARIANTS = Object.freeze([
-  'cards-down',
-  'cards-up',
-  'spine',
-  'icons',
-  'minimal',
-]);
-export const DEFAULT_RIGHT_RAIL_TAB_VARIANT = 'cards-down';
-
-/** Glyphs for the icon variant; every name is in index.html's icon_names. */
-const PANEL_ICONS = Object.freeze({
-  'pp-toggles': 'tune',
-  'cctv-panel': 'videocam',
-  'street-level-panel': 'streetview',
-  'global-context-panel': 'radar',
-  'weather-panel': 'cloud',
-  'recent-imagery-panel': 'satellite_alt',
-});
+/**
+ * Marks the rail while its strip is mounted; styles/right-rail-tabs.css keys
+ * the rail's tab geometry on it so a rail without a strip keeps its legacy
+ * layout.
+ */
+export const RIGHT_RAIL_TABS_ATTRIBUTE = 'data-rail-tabs';
 
 /**
  * The tab keyboard navigation moves to in a vertical tablist: Down and Up
@@ -80,14 +67,12 @@ function panelTitle(panel) {
  * @param {(panelId: string, collapsed: boolean, options: object) => void} input.setPanelCollapsed
  *   Owner callback; the strip never touches panel classes itself.
  * @param {Document} [input.documentRef]
- * @param {string} [input.variant] Initial presentation variant.
  * @returns {{ element: HTMLElement, sync: () => void, destroy: () => void }}
  */
 export function createRightRailTabs({
   rail,
   setPanelCollapsed,
   documentRef = rail?.ownerDocument,
-  variant = DEFAULT_RIGHT_RAIL_TAB_VARIANT,
 }) {
   if (!rail || !documentRef || typeof setPanelCollapsed !== 'function') {
     throw new TypeError(
@@ -100,7 +85,7 @@ export function createRightRailTabs({
   strip.setAttribute('role', 'tablist');
   strip.setAttribute('aria-orientation', 'vertical');
   strip.setAttribute('aria-label', t('Panels'));
-  if (!rail.dataset.railTabs) rail.dataset.railTabs = variant;
+  rail.setAttribute(RIGHT_RAIL_TABS_ATTRIBUTE, 'vertical');
 
   /** @type {Map<string, {tab: HTMLElement, label: HTMLElement}>} */
   const entries = new Map();
@@ -116,14 +101,6 @@ export function createRightRailTabs({
     tab.dataset.railTab = panel.id;
     tab.setAttribute('role', 'tab');
     tab.setAttribute('aria-controls', panel.id);
-    const icon = PANEL_ICONS[panel.id];
-    if (icon) {
-      const glyph = documentRef.createElement('span');
-      glyph.className = 'material-symbols-outlined right-rail-tab-icon';
-      glyph.setAttribute('aria-hidden', 'true');
-      glyph.textContent = icon;
-      tab.append(glyph);
-    }
     const label = documentRef.createElement('span');
     label.className = 'right-rail-tab-label';
     tab.append(label);
@@ -216,6 +193,7 @@ export function createRightRailTabs({
       strip.removeEventListener('click', onClick);
       strip.removeEventListener('keydown', onKeydown);
       strip.remove();
+      rail.removeAttribute(RIGHT_RAIL_TABS_ATTRIBUTE);
       entries.clear();
     },
   };

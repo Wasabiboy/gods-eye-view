@@ -225,11 +225,13 @@ layouts retain their existing presentation.
 Chamfered panel expand/collapse controls use an inset keyboard-focus outline and
 red hover border in both map and cockpit, so clipping does not hide the highlight.
 
-Cyber's map-side right rail opens one panel at a time while keeping collapsed
-launchers available. Display, CCTV and Context scroll their contents inside fixed
-headers and decorative frames. The narrow-screen rail remains scrollable to reach
-each panel. Radio retains the shared nested Context player and compact
-header disclosure, without relocating playback controls on theme changes.
+Cyber skins the map-side right rail's tab strip in its red and slate panel
+treatment; the one-panel rule it introduced now belongs to every desktop layout
+(see "Right rail tabs" below). Display, CCTV and Context scroll their contents
+inside fixed headers and decorative frames. The narrow-screen rail remains
+scrollable to reach each panel. Radio retains the shared nested Context player
+and compact header disclosure, without relocating playback controls on theme
+changes.
 
 Voice help/error popups and Location/Visual Presets pins extend beyond their
 Cyber frames without being clipped: the shapes decorate non-interactive
@@ -1472,17 +1474,40 @@ retains observers, frame scheduling, saved/share preferences and Cockpit portals
 
 The left rail keeps its measured collapsed heights and obstacle-safe corridor;
 the right rail follows its top baseline and preserves Display's scroll owner.
-Automatic collapse remains presentation only, prioritizes the latest explicit
-panel, and honors keyboard focus on the right. Mobile layout still releases
-desktop allocation styles. Stable Display allocation avoids unnecessary style
-writes. This extraction does not change panel positions or layout defaults.
+The left rail's automatic collapse remains presentation only and prioritizes
+the latest explicit panel. The right rail keeps one expanded owner (the latest
+explicit panel, else the panel holding keyboard focus, else the first) and
+presentation-collapses its peers with `rail-owner-collapsed`, which share links
+and the phone shell read as "expanded"; it needs no second pass. Mobile layout
+still releases desktop allocation styles and gives every owner-collapsed panel
+back. Stable Display allocation avoids unnecessary style writes.
 Context expansion through the panel owner or adaptive right-rail restoration
 closes an open compact Radio disclosure before Context/Space Missions becomes
 visible. The mini remains available while Context is collapsed. This fixes the
 Radio-overlap path reported in #804 without changing z-index or layout policy.
 The right rail skips panels hidden by other CSS (computed `display: none`), but
-keeps the collapsed panels its own exclusive presentation hides, so automatic
-collapse can still be undone.
+keeps the collapsed panels its own exclusive presentation hides, so the owner
+rule can still give them back.
+
+### Right rail tabs
+
+On desktop the right rail (Display, CCTV, Street Level, Context, plus Weather
+and Recent Imagery while they are shown) is a vertical tab strip
+(`src/ui/rightRailTabs.js`, `src/ui/styles/right-rail-tabs.css`): one sideways
+tab per panel hugs the rail's right edge, the open panel sits beside it, and
+collapsed panels are hidden in every HUD layout, so the strip is the only
+launcher. A tab toggles its panel through `setPanelCollapsed` with the explicit
+flag, so opening one collapses the others and the saved preference, share link
+and Context/Radio ownership rules are unchanged; the panels' `collapsed`
+classes remain the only state and the strip mirrors them through a
+MutationObserver. The strip is a `role="tablist"` with vertical orientation:
+Up/Down wrap, Home/End jump, the open tab (else the first) is the tab stop, and
+Escape inside a panel returns focus to that panel's tab. The strip precedes the
+panels in the DOM so Tab from the open tab enters the open panel. Labels are
+the panels' own translated header titles. The strip marks the rail with
+`data-rail-tabs`, which the stylesheet uses to reserve the strip's column; a
+rail without the strip keeps its legacy geometry. Phones hide the strip and
+keep the sheet shell; Cockpit hides the rail and the strip with it.
 
 ## Phone layout
 
@@ -1519,8 +1544,8 @@ sheet before a panel's own Escape handling, and the dock's hover auto-close does
 not apply inside a sheet.
 Cockpit, recording and clean view close the sheet and hide the tab bar; scene
 playback keeps both so its STOP control in the Scenes panel stays reachable. The
-right rail neither hides collapsed siblings nor applies Cyber's one-panel
-accordion at these widths, since the sheet chooses what shows. The Cesium and Google attribution stays visible above the
+right rail neither hides collapsed siblings, shows its tab strip, nor applies
+the desktop one-panel rule at these widths, since the sheet chooses what shows. The Cesium and Google attribution stays visible above the
 voice control, and above an open sheet. The page draws under the notch and
 system bars (`viewport-fit=cover`) and the shell's chrome uses safe-area insets.
 Wider viewports are unchanged, and crossing to them closes any open sheet.
