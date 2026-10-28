@@ -1,7 +1,7 @@
-# Swimming pools (Mairangi Bay)
+# Pool Spy — swimming-pool detections (Mairangi Bay)
 
 Backyard swimming-pool detections for the Mairangi Bay area (Auckland, New
-Zealand), bundled for the local `local-pools` layer.
+Zealand), bundled for the **Pool Spy** layer (`local-pools`).
 
 - Source: Wasabi Digital aerial-imagery detection pipeline (YOLO on Esri
   World Imagery / LINZ aerial tiles), reprojected to WGS84 (EPSG:4326)
