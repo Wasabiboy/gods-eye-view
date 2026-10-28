@@ -41,5 +41,22 @@ export function createInfrastructureLayers(services) {
     services,
   );
 
-  return [datacenters, dams];
+  const poolsUrl = INFRASTRUCTURE_DATA_URLS['local-pools'];
+  const pools = createLocalGeoJsonLayer(
+    {
+      id: 'local-pools',
+      url: poolsUrl,
+      name: 'Pool Spy',
+      color: '#33ddff', // Aqua
+      icon: '◎',
+      source: 'Aerial detection',
+      osmDerived: false,
+      labels: true,
+      labelMax: 300,
+      labelGridPx: 120,
+    },
+    services,
+  );
+
+  return [datacenters, dams, pools];
 }

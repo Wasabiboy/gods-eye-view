@@ -401,6 +401,12 @@ const layers = [
     },
   },
   {
+    id: 'local-pools',
+    aliases: ['pools', 'pool spy', 'swimming pools', 'backyard pools'],
+    context: true,
+    query: { fields: { name: ['t'], parcel_id: ['t'] } },
+  },
+  {
     id: 'telegeography-submarine-cables',
     aliases: ['submarine cables', 'undersea cables', 'cables', 'telegeography'],
     context: false,
