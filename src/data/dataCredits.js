@@ -441,6 +441,13 @@ export const DATA_CREDITS = [
     html: 'Dams: Open Infrastructure Map',
   },
   {
+    key: 'local-pools',
+    html:
+      'Swimming-pool detections (Mairangi Bay): Wasabi Digital aerial-imagery ' +
+      'detection extract. Candidate detections, not verified pools. ' +
+      'Proprietary — © Wasabi Digital; bundled in this fork, not covered by the MIT licence.',
+  },
+  {
     key: 'firms',
     html:
       'Active fires: NASA FIRMS — we acknowledge the use of data and/or imagery ' +
