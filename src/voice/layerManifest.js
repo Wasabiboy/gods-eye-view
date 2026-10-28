@@ -402,7 +402,7 @@ const layers = [
   },
   {
     id: 'local-pools',
-    aliases: ['pools', 'swimming pools', 'backyard pools'],
+    aliases: ['pools', 'pool spy', 'swimming pools', 'backyard pools'],
     context: true,
     query: { fields: { name: ['t'], parcel_id: ['t'] } },
   },

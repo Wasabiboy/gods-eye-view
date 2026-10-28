@@ -1,4 +1,4 @@
-- A new **Swimming Pools** data layer (`local-pools`) ships bundled backyard
+- A new **Pool Spy** data layer (`local-pools`) ships bundled backyard
   pool detections for Mairangi Bay, Auckland, alongside the existing Datacenters
   and Dams infrastructure layers. It reads the same local GeoJSON Lines format,
   registers in the Infrastructure panel group and the voice layer manifest, and

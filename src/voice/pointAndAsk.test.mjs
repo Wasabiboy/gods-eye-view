@@ -346,7 +346,7 @@ test('deixis prompt lint: one short rule, and every sentinel it names exists in 
   // Budget: the whole Realtime prompt (instructions + tools), measured in
   // characters. It was 56,308 after the area/imagery/OSM merge; stating each
   // policy once (WHERE precedence, AREAS routing, AFTER TOOLS speech) brought
-  // it to 51,646. Swimming Pools extends the generated layer enums; dropping
+  // it to 51,646. Pool Spy extends the generated layer enums; dropping
   // the wordings that repeated a policy stated elsewhere (the camera-claim
   // restatement, the hedge example, the verbatim-count hedge list, the
   // world-or-news aside) kept every policy and fit it under this ceiling.

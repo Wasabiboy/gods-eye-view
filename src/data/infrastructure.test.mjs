@@ -66,7 +66,7 @@ test('infrastructure factory preserves identity and creates independent state wi
     [
       { id: 'local-datacenters', name: 'Datacenters', source: 'Local' },
       { id: 'local-dams', name: 'Dams', source: 'USACE' },
-      { id: 'local-pools', name: 'Swimming Pools', source: 'Aerial detection' },
+      { id: 'local-pools', name: 'Pool Spy', source: 'Aerial detection' },
     ],
   );
   first.forEach((layer, index) => {

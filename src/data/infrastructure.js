@@ -46,7 +46,7 @@ export function createInfrastructureLayers(services) {
     {
       id: 'local-pools',
       url: poolsUrl,
-      name: 'Swimming Pools',
+      name: 'Pool Spy',
       color: '#33ddff', // Aqua
       icon: '◎',
       source: 'Aerial detection',
