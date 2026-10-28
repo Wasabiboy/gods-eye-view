@@ -51,7 +51,10 @@ const LOCAL_STEM_TIP_EPSILON_SQ = LOCAL_STEM_TIP_EPSILON_M ** 2;
 export function localInfrastructureOverlayCopy(properties, layerId) {
   const props = unwrapProperties(properties) || {};
   const tags = props.tags || {};
-  const title = featureLabelFromProperties(props, layerId);
+  const title =
+    layerId === 'local-pools' && props.id
+      ? `Pool #${String(props.id).replace(/^pool-/, '')}`
+      : featureLabelFromProperties(props, layerId);
   const details = [];
 
   if (layerId === 'local-datacenters') {
@@ -86,6 +89,15 @@ export function localInfrastructureOverlayCopy(properties, layerId) {
     if (river && river.toLocaleLowerCase() !== title.toLocaleLowerCase()) {
       details.push(clampCardLine(river));
     }
+  } else if (layerId === 'local-pools') {
+    const confidence = Number(props.confidence);
+    const bits = [];
+    if (Number.isFinite(confidence)) {
+      bits.push(`Confidence ${(confidence * 100).toFixed(0)}%`);
+    }
+    const parcel = firstClean([props.parcel_id]);
+    if (parcel) bits.push(parcel);
+    if (bits.length) details.push(clampCardLine(bits.join(' · ')));
   }
 
   return { title, details };
@@ -1244,6 +1256,7 @@ function labelPriorityFromProperties(props, layerId) {
   if (props.output || tags['plant:output:electricity']) score += 120;
   if (layerId === 'local-dams') score += 80;
   if (layerId === 'local-datacenters') score += 60;
+  if (layerId === 'local-pools') score += 60;
   return score;
 }
 
