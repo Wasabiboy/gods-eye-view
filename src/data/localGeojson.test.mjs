@@ -1345,3 +1345,93 @@ test('globe-LOD re-selects during continuous motion, without ever seeing a moveE
   assert.deepEqual(env.layer.getLodDiagnostics(), parked, 'a parked camera never re-selects');
 });
 
+
+test('a flyToFeaturesOnEnable layer frames its dataset only when the camera cannot already see it', async (t) => {
+  const originalFetch = globalThis.fetch;
+  const originalWindow = globalThis.window;
+  globalThis.window = { dispatchEvent() {} };
+  t.after(() => {
+    globalThis.fetch = originalFetch;
+    if (originalWindow === undefined) delete globalThis.window;
+    else globalThis.window = originalWindow;
+  });
+  // A polygon, not a point: GeoJsonDataSource builds point pins through DOM
+  // APIs a unit run has no business faking. The stem is anchored at the
+  // polygon's centre, which is all this contract needs.
+  globalThis.fetch = async () => ({
+    ok: true,
+    status: 200,
+    text: async () => JSON.stringify({
+      type: 'Feature',
+      id: 'pool-1',
+      properties: { id: 'pool-1' },
+      geometry: {
+        type: 'Polygon',
+        coordinates: [[
+          [174.7470, -36.7327],
+          [174.7484, -36.7327],
+          [174.7484, -36.7315],
+          [174.7470, -36.7315],
+          [174.7470, -36.7327],
+        ]],
+      },
+    }),
+  });
+
+  /** @param {Cesium.Rectangle|undefined} viewRectangle */
+  const build = (viewRectangle) => {
+    const flights = [];
+    const viewer = {
+      selectedEntity: undefined,
+      dataSources: {
+        add(source) { return source; },
+        remove() { return true; },
+      },
+      camera: {
+        positionWC: Cesium.Cartesian3.fromDegrees(0, 0, 10_000_000),
+        moveEnd: new MockLayerEvent(),
+        flyTo(options) { flights.push(options); },
+        computeViewRectangle() { return viewRectangle; },
+      },
+      scene: {
+        canvas: { clientWidth: 800, clientHeight: 600 },
+        globe: { ellipsoid: Cesium.Ellipsoid.WGS84 },
+        preRender: new MockLayerEvent(),
+        requestRender() {},
+        screenSpaceCameraController: { enableInputs: true },
+        pick() { return null; },
+      },
+    };
+    const layer = createLocalGeoJsonLayer({
+      id: 'local-pools',
+      url: '/mairangi-pools.geojsonl',
+      name: 'Pool Spy',
+      color: '#33ddff',
+      flyToFeaturesOnEnable: true,
+      overlayHost: { setVisible() {}, setEntries() {}, clearSource() {} },
+      screenSpaceEventHandlerFactory: () => ({ setInputAction() {}, destroy() {} }),
+    });
+    return { layer, viewer, flights };
+  };
+
+  // Camera parked on the other side of the planet: the flight frames the data.
+  const far = build(Cesium.Rectangle.fromDegrees(-1, -1, 1, 1));
+  await far.layer.enable(far.viewer);
+  far.layer.destroy(far.viewer);
+  assert.equal(far.flights.length, 1, 'one flight when the data is off-screen');
+  const { destination } = far.flights[0];
+  assert.ok(
+    destination.west < Cesium.Math.toRadians(174.7477) &&
+      destination.east > Cesium.Math.toRadians(174.7477) &&
+      destination.south < Cesium.Math.toRadians(-36.7321) &&
+      destination.north > Cesium.Math.toRadians(-36.7321),
+    'the destination rectangle contains the dataset',
+  );
+  assert.ok(far.flights[0].duration > 0, 'the flight is animated');
+
+  // Camera already framing the patch: leave it exactly where it is.
+  const framed = build(Cesium.Rectangle.fromDegrees(170, -40, 180, -30));
+  await framed.layer.enable(framed.viewer);
+  framed.layer.destroy(framed.viewer);
+  assert.equal(framed.flights.length, 0, 'no flight when the data is already framed');
+});

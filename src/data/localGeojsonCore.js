@@ -14,6 +14,16 @@ import {
 
 const DEFAULT_LABEL_MAX = 900;
 const DEFAULT_LABEL_GRID_PX = 132;
+// A local layer whose features are clustered into one small patch of the globe
+// (Pool Spy's Mairangi Bay cohort) can be switched on and still show nothing,
+// because the camera is parked on the other side of the planet. A layer that
+// opts into `flyToFeaturesOnEnable` is framed onto its own data the moment it
+// loads, so "enabled" and "visible" can never disagree. The pad keeps the
+// patch from filling the frame edge-to-edge; the ratio scales with the dataset
+// and the floor keeps a handful of points from zooming in absurdly close.
+const FRAME_PADDING_RATIO = 0.5;
+const FRAME_MIN_PAD_DEG = 0.02;
+const FRAME_FLIGHT_SECONDS = 1.8;
 const VISIBILITY_UPDATE_MS = 450;
 // Each source keeps its own bounded cohort; the host sums their ambient-card
 // paint budgets only up to its 192-card shared-lane ceiling.
@@ -322,6 +332,8 @@ export function createLocalGeoJsonLayer(
     labels = true,
     labelMax = DEFAULT_LABEL_MAX,
     labelGridPx = DEFAULT_LABEL_GRID_PX,
+    // Opt-in: frame the materialized dataset when the layer is switched on.
+    flyToFeaturesOnEnable = false,
     screenSpaceEventHandlerFactory = (canvas) =>
       new Cesium.ScreenSpaceEventHandler(canvas),
     projectToWindow = (scene, position) =>
@@ -487,6 +499,74 @@ export function createLocalGeoJsonLayer(
       _cameraMoveEndRemover();
       _cameraMoveEndRemover = null;
     }
+  };
+
+  /**
+   * Frame the materialized dataset when the layer is switched on. Only used by
+   * layers that opt into `flyToFeaturesOnEnable`, so a small clustered dataset
+   * cannot be "on but invisible" behind a camera parked elsewhere. A no-op
+   * when nothing loaded, when the camera already frames the whole patch, or
+   * when the supplied viewer has no camera API (unit harnesses).
+   * @param {object} viewer
+   * @returns {boolean} Whether a flight was started.
+   */
+  const frameBundledFeatures = (viewer) => {
+    if (!_stemRecords.length) return false;
+    const camera = viewer?.camera;
+    if (typeof camera?.flyTo !== 'function') return false;
+
+    let west = Infinity;
+    let south = Infinity;
+    let east = -Infinity;
+    let north = -Infinity;
+    for (let i = 0; i < _stemRecords.length; i++) {
+      const carto = _stemRecords[i].carto;
+      if (!carto) continue;
+      const lon = Cesium.Math.toDegrees(carto.longitude);
+      const lat = Cesium.Math.toDegrees(carto.latitude);
+      if (lon < west) west = lon;
+      if (lon > east) east = lon;
+      if (lat < south) south = lat;
+      if (lat > north) north = lat;
+    }
+    if (!Number.isFinite(west)) return false;
+
+    const padLon = Math.max(
+      (east - west) * FRAME_PADDING_RATIO,
+      FRAME_MIN_PAD_DEG,
+    );
+    const padLat = Math.max(
+      (north - south) * FRAME_PADDING_RATIO,
+      FRAME_MIN_PAD_DEG,
+    );
+    const target = Cesium.Rectangle.fromDegrees(
+      Math.max(west - padLon, -180),
+      Math.max(south - padLat, -90),
+      Math.min(east + padLon, 180),
+      Math.min(north + padLat, 90),
+    );
+
+    // Leave a camera that already sees the whole patch exactly where the user
+    // put it — the flight exists for the "switched on from elsewhere" case.
+    const globe = viewer?.scene?.globe;
+    if (globe && typeof camera.computeViewRectangle === 'function') {
+      try {
+        const view = camera.computeViewRectangle(globe.ellipsoid);
+        if (
+          view &&
+          view.west <= target.west &&
+          view.east >= target.east &&
+          view.south <= target.south &&
+          view.north >= target.north
+        )
+          return false;
+      } catch {
+        /* fall through to the flight */
+      }
+    }
+
+    camera.flyTo({ destination: target, duration: FRAME_FLIGHT_SECONDS });
+    return true;
   };
 
   return {
@@ -1071,6 +1151,7 @@ export function createLocalGeoJsonLayer(
         return;
       }
       if (_dataSource) _dataSource.show = true;
+      if (_enabled && flyToFeaturesOnEnable) frameBundledFeatures(viewer);
       viewer.scene.requestRender?.();
     },
 

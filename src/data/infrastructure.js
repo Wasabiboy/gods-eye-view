@@ -54,6 +54,9 @@ export function createInfrastructureLayers(services) {
       labels: true,
       labelMax: 300,
       labelGridPx: 120,
+      // The bundled cohort is one small Mairangi Bay patch, so enabling it from
+      // anywhere else used to look broken. Frame it on enable.
+      flyToFeaturesOnEnable: true,
     },
     services,
   );
